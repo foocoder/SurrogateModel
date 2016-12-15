@@ -282,7 +282,9 @@ vector< vector< int > > NSGAII::_fnNonDominateSort(vector<IndividualNode> & vnod
                         vnodePopulations[j]._bIsDuplicate = true;
                     }
                     else{
-                        cout<<"\033[41m"<<"Calculate Solution Duplicate Err!"<<endl;
+                        #ifdef _DEBUG_
+                        cout<<"\033[41m"<<"Calculate Solution Duplicate Err!\033[0m"<<endl;
+                        #endif
                     }
                     vviIDominate[i].push_back(j);
                     viDominateMe[j]++;
@@ -619,7 +621,9 @@ bool NSGAII::_fnCheckSimilar( vector<IndividualNode> lhs, vector<IndividualNode>
         }
     }
     double rate = (double) cnt / size;
+    #ifdef _DUBUG_
     cout<<cnt<<"/"<<size << endl;
+    #endif
     if( rate > 0.9 )
     {
         return true;
@@ -674,6 +678,7 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
         _fnCalcCrowdDistance(vnodeMixedPop, vviMixFrontList);
 
         //for debug
+        #ifdef _DEBUG_
         int iFrontCnt        = 0;
         int iIndCnt          = 0;
         int iBackgroundColor = 0;
@@ -696,7 +701,7 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
             iFrontCnt++;
         }
         //end debug
-
+        #endif
         vnodePopulations.clear();
         vnodePopulations = _fnNatureSelectionNoDuplicate(vnodeMixedPop, vviMixFrontList);
 
