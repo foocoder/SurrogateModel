@@ -50,7 +50,8 @@ NSGAII::NSGAII
  int iDataDims,
  int iObjDims,
  const vector<myBitSet<M>> & vbitDatabase
- )
+ ):
+    _vbitDatabase(vbitDatabase)
 {
     _iPopSize  = iPopSize;
     _iPopDims  = iPopDims;
@@ -62,8 +63,6 @@ NSGAII::NSGAII
     _viItemLength.reserve(iDataDims);
     _viTransLength.reserve(iDataSize);
     _vbitDatabase.reserve(iDataSize);
-
-    _vbitDatabase = vbitDatabase;
 
     //vector<int> viItemLenTemp(iDataDims,0);
     for(int i=0; i<_iDataDims; i++)
@@ -511,8 +510,7 @@ vector<IndividualNode>  NSGAII::_fnNatureSelectionNoDuplicate
         }
     }
 
-    if( iDupCnt < _iPopSize )
-    {
+    if( iDupCnt < _iPopSize ){
         int iCurFrontSize  = vviFrontList[iCurFrontIndex].size();
         for( auto idx : vviFrontList[iCurFrontIndex] ){
             if(vnodeAllPop[idx]._bIsDuplicate){
@@ -554,7 +552,8 @@ vector<IndividualNode>  NSGAII::_fnNatureSelectionNoDuplicate
     }
     else{
         for( auto node : vnodeAllPop ){
-            vnodeNextPop[iCurSelectNum++] = node;
+            if( !node._bIsDuplicate )
+                vnodeNextPop[iCurSelectNum++] = node;
         }
 
         int iCurFrontSize  = vviFrontList[iCurFrontIndex].size();
