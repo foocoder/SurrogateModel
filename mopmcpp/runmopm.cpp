@@ -9,6 +9,7 @@
 // ---- Program Info End  ----
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -45,12 +46,18 @@ void fnReadData(string strFileName, vector<myBitSet<M> > &vbitDatabase, int & iR
     }
 }
 
-void fnRunNSGAII(const string & strDataPath, const string & strResPath, const string& inputFile)
+void fnRunNSGAII
+(
+ const string & strDataPath,
+ const string & strResPath,
+ const string & strInDBName,
+ const string & strSaveName
+ )
 {
     vector<myBitSet<M>> vbitDatabase;
     vbitDatabase.reserve(N);
     int iRowNum=0, iColumnNum=0;
-    string input = strDataPath + "/" + inputFile;
+    string input = strDataPath + "/" + strInDBName;
     fnReadData(input, vbitDatabase, iRowNum, iColumnNum);
 
     int iPopSize = (iColumnNum / 50 + 1) * 50;
@@ -62,8 +69,10 @@ void fnRunNSGAII(const string & strDataPath, const string & strResPath, const st
     double spendTime;
     const vector<IndividualNode> & vnodeResult = algorithm._fnMOEC(traversNode, spendTime);
     //strDataPath += ".results";
-    string resFile = strResPath + "/" + inputFile + ".results";
-    ofstream resultFiles( resFile.c_str() );
+    string strResPatName = strResPath + "/" + strSaveName;
+    string strResFitName = strResPath + "/" + strSaveName + ".fit";
+    ofstream ofsResPatFile( strResPatName.c_str() );
+    ofstream ofsResFitFile( strResFitName.c_str() );
 
     for(auto nodeIter:vnodeResult)
     {
@@ -71,25 +80,25 @@ void fnRunNSGAII(const string & strDataPath, const string & strResPath, const st
         {
             if(nodeIter._bitTransaction.test(i))
             {
-                resultFiles<<i<<",";
+                ofsResPatFile<<i<<" ";
             }
         }
-        resultFiles<<"\b;";
+        ofsResPatFile<<endl;
         for(auto i : nodeIter._vfFitness)
         {
-            resultFiles<<i<<",";
+            ofsResFitFile<<setw(12)<<i<<"\t";
         }
-        resultFiles<<"\b "<<endl;
+        ofsResFitFile<<endl;
     }
-    resultFiles<<spendTime<<","<<traversNode<<endl;
+    ofsResFitFile<<"Time:"<<setw(10)<<spendTime<<setw(10)<<"\tNode:"<<setw(10)<<traversNode<<endl;
 }
 
 int main(int argc, char *argv[])
 {
-    if( argc < 4 ){
-        cerr<<"Usage: ./runmopm datapath resultpath inputfile"<<endl;
+    if( argc < 5 ){
+        cerr<<"Usage: ./a.out datapath resultpath strInDBName strSaveFiles"<<endl;
         exit(-1);
     }
-    fnRunNSGAII(argv[1], argv[2], argv[3]);
+    fnRunNSGAII(argv[1], argv[2], argv[3], argv[4]);
     return 0;
 }
