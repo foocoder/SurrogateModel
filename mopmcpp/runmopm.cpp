@@ -18,30 +18,30 @@
 
 using namespace std;
 
-void fnReadData(string strFileName, vector<myBitSet<M> > &vbitDatabase, int & iRowCounter, int & iColumnCounter){
-    ifstream infile(strFileName.c_str(),ios::in|ios::binary);
+void fnReadData( string strFileName, vector<myBitSet<M> > &vbitDatabase, int & iRowCounter, int & iColumnCounter ){
+    ifstream infile( strFileName.c_str( ),ios::in|ios::binary );
     string strLine;
     int iWord;
-    if(!infile){
+    if( !infile ){
         cerr << "error not opened!" << endl;
         return;
     }
     //cout<<"Start Read Data"<<endl;
-    while(getline(infile,strLine))
+    while( getline( infile,strLine ) )
     {
-        istringstream stream(strLine);
+        istringstream stream( strLine );
         iColumnCounter = 0;
         myBitSet<M> bitTransTemp;
-        while(stream >> iWord)
+        while( stream >> iWord )
         {
-            if(iWord == 1){
-                bitTransTemp.set(iColumnCounter);
+            if( iWord == 1 ){
+                bitTransTemp.set( iColumnCounter );
             }
-            else if(iWord == 0){
+            else if( iWord == 0 ){
             }
             iColumnCounter ++;
         }
-        vbitDatabase.push_back(bitTransTemp);
+        vbitDatabase.push_back( bitTransTemp );
         iRowCounter++;
     }
 }
@@ -50,55 +50,53 @@ void fnRunNSGAII
 (
  const string & strDataPath,
  const string & strResPath,
- const string & strInDBName,
  const string & strSaveName
  )
 {
     vector<myBitSet<M>> vbitDatabase;
-    vbitDatabase.reserve(N);
+    vbitDatabase.reserve( N );
     int iRowNum=0, iColumnNum=0;
-    string input = strDataPath + "/" + strInDBName;
-    fnReadData(input, vbitDatabase, iRowNum, iColumnNum);
+    fnReadData( strDataPath, vbitDatabase, iRowNum, iColumnNum );
 
-    int iPopSize = (iColumnNum / 50 + 1) * 50;
+    int iPopSize = ( iColumnNum / 50 + 1 ) * 50;
     //iPopSize = iPopSize > 1000 ? 1000 : iPopSize;
     //iPopSize = 20;
     cout<<"Starting NSGAII..."<<endl;
-    NSGAII algorithm = NSGAII(iPopSize, iColumnNum, iRowNum, iColumnNum, 3, vbitDatabase);
+    NSGAII algorithm = NSGAII( iPopSize, iColumnNum, iRowNum, iColumnNum, 3, vbitDatabase );
     int traversNode;
     double spendTime;
-    const vector<IndividualNode> & vnodeResult = algorithm._fnMOEC(traversNode, spendTime);
+    const vector<IndividualNode> & vnodeResult = algorithm._fnMOEC( traversNode, spendTime );
     //strDataPath += ".results";
     string strResPatName = strResPath + "/" + strSaveName;
     string strResFitName = strResPath + "/" + strSaveName + ".fit";
-    ofstream ofsResPatFile( strResPatName.c_str() );
-    ofstream ofsResFitFile( strResFitName.c_str() );
+    ofstream ofsResPatFile( strResPatName.c_str( ) );
+    ofstream ofsResFitFile( strResFitName.c_str( ) );
 
-    for(auto nodeIter:vnodeResult)
+    for( auto nodeIter:vnodeResult )
     {
-        for(int i=0; i<iColumnNum; i++)
+        for( int i=0; i<iColumnNum; i++ )
         {
-            if(nodeIter._bitTransaction.test(i))
+            if( nodeIter._bitTransaction.test( i ) )
             {
                 ofsResPatFile<<i<<" ";
             }
         }
         ofsResPatFile<<endl;
-        for(auto i : nodeIter._vfFitness)
+        for( auto i : nodeIter._vfFitness )
         {
-            ofsResFitFile<<setw(12)<<i<<"\t";
+            ofsResFitFile<<setw( 12 )<<i<<"\t";
         }
         ofsResFitFile<<endl;
     }
-    ofsResFitFile<<"Time:"<<setw(10)<<spendTime<<setw(10)<<"\tNode:"<<setw(10)<<traversNode<<endl;
+    ofsResFitFile<<"Time:"<<setw( 10 )<<spendTime<<setw( 10 )<<"\tNode:"<<setw( 10 )<<traversNode<<endl;
 }
 
-int main(int argc, char *argv[])
+int main( int argc, char *argv[] )
 {
-    if( argc < 5 ){
-        cerr<<"Usage: ./a.out datapath resultpath strInDBName strSaveFiles"<<endl;
-        exit(-1);
+    if( argc < 4 ){
+        cerr<<"Usage: ./a.out datapath resultpath strSaveFiles"<<endl;
+        exit( -1 );
     }
-    fnRunNSGAII(argv[1], argv[2], argv[3], argv[4]);
+    fnRunNSGAII( argv[1], argv[2], argv[3] );
     return 0;
 }
