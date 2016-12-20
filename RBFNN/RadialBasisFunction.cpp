@@ -183,8 +183,6 @@ void RadialBasisFunction::_fnCalcDelta(){
 }
 /*运行RBF网络*/
 void RadialBasisFunction::runRBF(){
-    //生成随机种子
-    srand(time(0));
     //K-protytype 选取中心点
     _fnKPrototype();
     //根据center计算delta

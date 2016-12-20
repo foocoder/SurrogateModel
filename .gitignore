@@ -31,5 +31,9 @@
 *.out
 *.app
 
+# Datas
+*.dat
+*.db
+
 # Memory Dump Core
 core
