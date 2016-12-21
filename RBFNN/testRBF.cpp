@@ -26,11 +26,11 @@ typedef map<vector<int>, vector<double>> Ind;
 
 Ind DB;  //数据库
 const int iInDim        = 15;
-const int iNumTrains    = 200;
-const int iNumHideNodes = 20;
-//const int iObjType      = 1;
+const int iNumTrains    = 100;
+const int iNumHideNodes = 10;
+const int iObjType      = 1;
 
-void readData( string filename ){
+void readData( const string & filename, int iInDim ){
     ifstream ifile( filename.c_str( ) );
     if( !ifile ){
         cerr<<"Open file "<<filename<<" failed!"<<endl;
@@ -52,7 +52,7 @@ void readData( string filename ){
     }
 }
 
-vector<int> Binary2Gray( int bin ){
+vector<int> Binary2Gray( int bin, int iInDim ){
     stack<int> grayStack;
     vector<int> grayCode( iInDim );
     for( int i=0; i<iInDim; ++i ){
@@ -74,63 +74,78 @@ int main( int argc, char *argv[] )
 
     /*生成随机种子*/
     srand( time( NULL ) );
-    string filename="./data/PatternDB.db";
+    //string filename="./data/PatternDB.db";
+    string filename = argv[1];
 
-    readData( filename.c_str( ) );
+    int iInDim = atoi( argv[2] );
+    readData( filename, iInDim );
     int DBSize = pow( 2, iInDim );
-    int iRunTotal = 5000;
+    int iRunTotal = 1000;
+    vector<int> viHideNode { 5, 10, 20 };
+    vector<int> viNumTrains { 100, 200 };
 
+    cout<<"File: "<<argv[1]<<endl;
     for( int iObjType = 0; iObjType<2; ++iObjType )
     {
         //多次运行, 寻找合适步长
-        for( int iStep = 1; iStep < 20; ++iStep )
+        //for( int iStep = 1; iStep < 20; ++iStep )
+        for( int iNumTrains : viNumTrains )
         {
-            vector<double> vfErrors(iRunTotal);
-            for( int iRun = 0; iRun<iRunTotal; ++iRun )
+            for( int iNumHideNodes : viHideNode  )
             {
-                vector<int> trainIDX( iNumTrains );
-                vector<int> testIDX( iNumTrains );
-                int seed = rand( ) % DBSize;
-                for( int i=0; i<iNumTrains; ++i ){
-                    trainIDX[i] = seed;
-                    //testIDX[i] = ( seed+1 ) % DBSize;
-                    testIDX[i] = rand() % DBSize;
-                    seed = ( seed+iStep ) % DBSize;
+                vector<double> vfErrors(iRunTotal);
+                for( int iRun = 0; iRun<iRunTotal; ++iRun )
+                {
+                    vector<int> trainIDX( iNumTrains );
+                    vector<int> testIDX( iNumTrains );
+                    int seed = rand( ) % DBSize;
+                    for( int i=0; i<iNumTrains; ++i ){
+                        trainIDX[i] = seed;
+                        //testIDX[i] = ( seed+1 ) % DBSize;
+                        testIDX[i] = rand() % DBSize;
+                        //seed = ( seed+iStep ) % DBSize;
+                        seed = rand() % DBSize;
+                    }
+
+                    vector<vector<int>> trainData( iNumTrains );
+                    vector<vector<int>> testData( iNumTrains );
+                    vector<double> trainReal( iNumTrains );
+                    for( int i=0; i<iNumTrains; ++i ){
+                        trainData[i] = Binary2Gray( trainIDX[i], iInDim);
+                        testData[i]  = Binary2Gray( testIDX[i], iInDim );
+                        trainReal[i] = DB[trainData[i]][iObjType];
+                    }
+
+                    RadialBasisFunction rbf( iNumTrains, iNumHideNodes, iInDim, trainData, trainReal );
+                    rbf.runRBF( );
+
+                    double fTotalErr = 0.0;
+                    for( int i=0; i<iNumTrains; ++i ){
+                        //cout<<setw( 12 )<<rbf.getEstimation( testData[i] )<<"\t"<<setw( 12 )<<DB[testData[i]][iObjType]<<"\t"<<setw( 12 )<<fabs( DB[testData[i]][iObjType]-rbf.getEstimation( testData[i] ) )<<endl;
+                        fTotalErr += fabs( rbf.getEstimation( testData[i] ) - DB[testData[i]][iObjType] );
+                    }
+                    //cout<<"Step: "<<setw(3)<<seed<<"\tTotal Error: "<<setw(12)<<fTotalErr<<endl;
+                    vfErrors[iRun] = fTotalErr;
                 }
 
-                vector<vector<int>> trainData( iNumTrains );
-                vector<vector<int>> testData( iNumTrains );
-                vector<double> trainReal( iNumTrains );
-                for( int i=0; i<iNumTrains; ++i ){
-                    trainData[i] = Binary2Gray( trainIDX[i] );
-                    testData[i]  = Binary2Gray( testIDX[i] );
-                    trainReal[i] = DB[trainData[i]][iObjType];
+                double fAvgErr = 0.0;
+                double fStdErr = 0.0;
+                for( double i : vfErrors ){
+                    fAvgErr += i;
                 }
-
-                RadialBasisFunction rbf( iNumTrains, iNumHideNodes, iInDim, trainData, trainReal );
-                rbf.runRBF( );
-
-                double fTotalErr = 0.0;
-                for( int i=0; i<iNumTrains; ++i ){
-                    //cout<<setw( 12 )<<rbf.getEstimation( testData[i] )<<"\t"<<setw( 12 )<<DB[testData[i]][iObjType]<<"\t"<<setw( 12 )<<fabs( DB[testData[i]][iObjType]-rbf.getEstimation( testData[i] ) )<<endl;
-                    fTotalErr += fabs( rbf.getEstimation( testData[i] ) - DB[testData[i]][iObjType] );
+                fAvgErr /= vfErrors.size();
+                for( double i : vfErrors ){
+                    fStdErr += fabs( i-fAvgErr ) * fabs( i-fAvgErr );
                 }
-                //cout<<"Step: "<<setw(3)<<seed<<"\tTotal Error: "<<setw(12)<<fTotalErr<<endl;
-                vfErrors[iRun] = fTotalErr;
+                fStdErr /= vfErrors.size();
+                fStdErr = sqrt( fStdErr );
+                cout<<setw(10)<<(iObjType == 0 ? "Support" : "Occupancy")
+                    <<"\tTrainPoints:"<<setw(12)<<iNumTrains
+                    <<"\tHiddenNodes:"<<setw(5)<<iNumHideNodes
+                    <<"\tStep: "<<setw(10)<<"Random"
+                    <<"\tAvg Err: "<<setw(12)<<fAvgErr/ iRunTotal
+                    <<"\tStd."<<setw(12)<<fStdErr<<endl;
             }
-
-            double fAvgErr = 0.0;
-            double fStdErr = 0.0;
-            for( double i : vfErrors ){
-                fAvgErr += i;
-            }
-            fAvgErr /= vfErrors.size();
-            for( double i : vfErrors ){
-                fStdErr += fabs( i-fAvgErr ) * fabs( i-fAvgErr );
-            }
-            fStdErr /= vfErrors.size();
-            fStdErr = sqrt( fStdErr );
-            cout<<setw(10)<<(iObjType == 0 ? "Support" : "Occupancy")<<"\tStep: "<<setw(4)<<iStep<<"\tAvg Err: "<<setw(12)<<fAvgErr<<"\tStd."<<setw(12)<<fStdErr<<endl;
         }
 
     }

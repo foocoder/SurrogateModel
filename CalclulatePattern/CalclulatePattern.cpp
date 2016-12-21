@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     CGrayCode gray;
 
     vector<myBitSet<N>> grayCode = gray.getGrayCode();
-    ofstream ofile( "./Data/PatternDB" );
+    ofstream ofile( argv[2] );
     if( !ofile ){
         cerr<<"Open file failed!"<<endl;
         exit(-1);

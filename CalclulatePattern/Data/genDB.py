@@ -13,12 +13,12 @@
 import random
 import sys
 
-def genRandomDB( iRow, iColumn, dDensity ):
+def genRandomDB( iRow, iColumn, dDensity, strFileName ):
     random.seed();
     DB = '\n'.join([ ' '.join([ '0' if random.uniform(0.0,1.0) > dDensity else '1' for j in xrange(iColumn) ]) for i in xrange(iRow) ]);
-    with open( './randomDB', 'wb' ) as f:
+    with open( strFileName, 'wb' ) as f:
         f.write( DB );
 
 if __name__ == '__main__':
-    genRandomDB( int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3]) );
+    genRandomDB( int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3]), sys.argv[4] );
 

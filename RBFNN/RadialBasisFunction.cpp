@@ -116,11 +116,10 @@ void RadialBasisFunction::_fnKPrototype(){
     assert(_iNumSample % _iHidNode == 0);
     vector<vector<vector<int>>> vvviPackage(_iHidNode);          //记录各个聚类中包含哪些样本
     int iCnt = 0;
+    int iSep  = _iNumSample / _iHidNode;
+    int iStep = rand() % iSep;
     for(int i=0;i<_iHidNode;++i){   //从_iNumSample个输入样本中随机选_iHidNode个作为初始聚类中心
-        //for( int j=0; j<_iInDim; ++j ){
-            //_vviCenter[i].push_back( _vviInSample[10*i+3][j] );
-        //}
-        _vviCenter[i] = _vviInSample[5*i+3];
+        _vviCenter[i] = _vviInSample[iSep*i+iStep];
     }
     while(1){
         for(int i=0;i<_iHidNode;++i)

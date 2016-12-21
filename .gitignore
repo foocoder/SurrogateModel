@@ -37,3 +37,7 @@
 
 # Memory Dump Core
 core
+
+# Logs
+logs
+*.log
