@@ -10,29 +10,27 @@
 
 #include <vector>
 #include "myBitSet.h"
-//#include <bitset>
+#include "RadialBasisFunction.h"
 
-//#define NBitVector bitset<N>
-//#define MBitVector bitset<M>
-//#define N 573652
-//#define M 273
+#define N 573652
+#define M 273
 #define MAX_VALUE 10000000
-using namespace std;
 
 template <typename T>
-vector<size_t> fnSortIndex(const vector<T> & v, int iType);
+std::vector<size_t> fnSortIndex(const std::vector<T> & v, int iType);
 
 typedef struct IndividualNode
 {
     myBitSet<M> _bitTransaction;
-    vector<double> _vfFitness;
+    std::vector<double> _vfFitness;
+    std::vector<double> _vfEstimates;
+    std::vector<int> _viTransaction;
     int _iFrontNo;
     double _fCrowdDistance;
     bool _bIsDuplicate;
 
-    IndividualNode()
+    IndividualNode():
     {
-        _bitTransaction = myBitSet<M>();
         _iFrontNo = 0;
         _fCrowdDistance = 0;
         _bIsDuplicate = false;
@@ -43,26 +41,61 @@ class NSGAII
 {
     int _iPopSize, _iPopDims, _iDataSize, _iDataDims;
     int _iObjDims;
-    vector<myBitSet<M> > _vbitDatabase;
-    vector<myBitSet<N> > _vbitItemDatabase;
-    vector<int> _viTransLength;
-    vector<int> _viItemLength;
-    vector<size_t> _vsizetSortedItemLengthIndex;
+    std::vector<myBitSet<M> > _vbitDatabase;
+    std::vector<myBitSet<N> > _vbitItemDatabase;
+    std::vector<int> _viTransLength;
+    std::vector<int> _viItemLength;
+    std::vector<size_t> _vsizetSortedItemLengthIndex;
 
-public:
+    public:
     NSGAII();
     ~NSGAII();
 
-    NSGAII(int iPopSize, int iPopDims, int iDataSize, int iDataDims, int iObjDims, const vector<myBitSet<M>> &vbitDatabase);
-    vector<IndividualNode> _fnInitialization();
-    void _fnCalcFiteness(vector<IndividualNode> &vnodePopulations);
-    vector<vector<int> > _fnNonDominateSort(vector<IndividualNode> &vnodePopulations);
-    void _fnCalcCrowdDistance( vector<IndividualNode> & vnodePopulations, const vector<vector<int> > &vviFrontList );
-    vector<IndividualNode> _fnSelectMatingPool(const vector<IndividualNode> &vnodePopulations);
-    void _fnReproduceOff(vector<IndividualNode> &vnodeMatePool);
-    vector<IndividualNode> _fnNatureSelection(const vector<IndividualNode> &vnodeAllPop, const vector<vector<int> > & vviFrontList);
-    vector<IndividualNode> _fnNatureSelectionNoDuplicate(const vector<IndividualNode> &vnodeAllPop, const vector<vector<int> > & vviFrontList);
-    vector<IndividualNode> _fnMOEC( int &, double & );
-    bool _fnCheckSimilar( vector<IndividualNode> lhs, vector<IndividualNode> rhs );
-    void _fnDebugPrintInfo( ofstream & logs, vector<IndividualNode> & vnodePopulations );
+    NSGAII(
+            int iPopSize,
+            int iPopDims,
+            int iDataSize,
+            int iDataDims,
+            int iObjDims,
+            const std::vector<myBitSet<M>> &vbitDatabase
+          );
+    std::vector<IndividualNode> _fnInitialization(
+
+            );
+    void _fnCalcFiteness(
+            std::vector<IndividualNode> &vnodePopulations
+            );
+    std::vector<std::vector<int> > _fnNonDominateSort(
+            std::vector<IndividualNode> &vnodePopulations
+            );
+    void _fnCalcCrowdDistance(
+            std::vector<IndividualNode> & vnodePopulations,
+            const std::vector<std::vector<int> > &vviFrontList
+            );
+    std::vector<IndividualNode> _fnSelectMatingPool(
+            const std::vector<IndividualNode> &vnodePopulations
+            );
+    void _fnReproduceOff(
+            std::vector<IndividualNode> &vnodeMatePool
+            );
+    std::vector<IndividualNode> _fnNatureSelection(
+            const std::vector<IndividualNode> &vnodeAllPop,
+            const std::vector<std::vector<int> > & vviFrontList
+            );
+    std::vector<IndividualNode> _fnNatureSelectionNoDuplicate(
+            const std::vector<IndividualNode> &vnodeAllPop,
+            const std::vector<std::vector<int> > & vviFrontList
+            );
+    std::vector<IndividualNode> _fnMOEC(
+            int &,
+            double &
+            );
+    bool _fnCheckSimilar(
+            std::vector<IndividualNode> lhs,
+            std::vector<IndividualNode> rhs
+            );
+    void _fnDebugPrintInfo(
+            std::ofstream & logs,
+            std::vector<IndividualNode> & vnodePopulations
+            );
 };
