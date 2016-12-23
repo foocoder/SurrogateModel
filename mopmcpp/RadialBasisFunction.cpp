@@ -71,6 +71,16 @@ double RadialBasisFunction::getEstimation( const vector<int> & inNode ){
     return dResult;
 }
 
+/*根据网络，由输入得到输出*/
+double RadialBasisFunction::getEstimation( const vector<int> & inNode ) const
+{
+    double dResult = 0.0;
+    for( int i=0; i<_iHidNode; ++i ){
+        int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+        dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
+    }
+    return dResult;
+}
 /*计算样本距离*/
 int RadialBasisFunction::_fnGetDistance( const vector<int> &lhs, const vector<int> &rhs ){
     int iDist = 0.0;
@@ -173,10 +183,6 @@ void RadialBasisFunction::_fnCalcDelta(){
                 _vdDelta[i] = _vdDelta[i] <= iDist ? _vdDelta[i] : iDist;
             }
         }
-        //if( _vdDelta[i] > 999.999 ){
-            //cerr<<"Error In Calculate _vdDelta!"<<endl;
-            //exit(-1);
-        //}
     }
 
 }

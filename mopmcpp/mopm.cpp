@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <ctime>
 #include "mopm.h"
+#include "RadialBasisFunction.h"
 
 using namespace std;
 
@@ -153,6 +154,53 @@ vector<IndividualNode> NSGAII::_fnInitialization()
 
     //cout<<"NSGAII::_fnInitialization Finish!"<<endl;
     return vnodePopulations;
+}
+
+vector<RadialBasisFunction> NSGAII::_fnBuildModel
+(
+ const vector<IndividualNode> & vnodeDatabase
+ ){
+    int iDBSize = vnodeDatabase.size();
+    vector<vector<int>> vviSample( iDBSize );
+    vector<double> vfRealSup( iDBSize );
+    vector<double> vfRealOcc( iDBSize );
+    vector<double> vfRealAre( iDBSize );
+
+    for( int i=0; i<iDBSize; ++i ){
+        vector<int> viSolution( _iPopDims );
+        for( int j=0; j<_iPopDims; ++j ){
+            viSolution[j] = ( vnodeDatabase[i]._bitTransaction.test(j) ? 1 : 0 );
+        }
+        vviSample[i] = viSolution;
+        vfRealSup[i] = vnodeDatabase[i]._vfFitness[0];
+        vfRealOcc[i] = vnodeDatabase[i]._vfFitness[1];
+        vfRealAre[i] = vnodeDatabase[i]._vfFitness[2];
+    }
+
+    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup );
+    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc );
+    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre );
+
+    rbfSup.runRBF();
+    rbfOcc.runRBF();
+    rbfAre.runRBF();
+    return { rbfSup, rbfOcc, rbfAre };
+}
+
+void NSGAII::_fnCalcEstimation
+(
+ const vector<RadialBasisFunction> & vmRBFModels,
+ vector<IndividualNode> & vnodePopulations
+ ){
+    for( int i=0; i<_iPopSize; ++i ){
+        vector<int> viSolution( _iPopDims );
+        for( int j=0; j<_iPopDims; ++j ){
+            viSolution[j] = ( vnodePopulations[i]._bitTransaction.test(j) ? 1 : 0 );
+        }
+        vnodePopulations[i]._vfFitness[0] = vmRBFModels[0].getEstimation( viSolution );
+        vnodePopulations[i]._vfFitness[1] = vmRBFModels[1].getEstimation( viSolution );
+        vnodePopulations[i]._vfFitness[2] = vmRBFModels[2].getEstimation( viSolution );
+    }
 }
 
 void NSGAII::_fnCalcFiteness( vector<IndividualNode> &vnodePopulations )
@@ -361,7 +409,7 @@ void NSGAII::_fnCalcCrowdDistance
 
             double fMaxDistance = vfSingleFitness[vsizetSortedFitnessIndex[iCurFrontSize-1]];
             double fMinDistance = vfSingleFitness[vsizetSortedFitnessIndex[0]];
-            vnodePopulations[iCurFront[vsizetSortedFitnessIndex[0]]]._fCrowdDistance = MAX_VALUE;
+            vnodePopulations[iCurFront[vsizetSortedFitnessIndex[0]]]._fCrowdDistance               = MAX_VALUE;
             vnodePopulations[iCurFront[vsizetSortedFitnessIndex[iCurFrontSize-1]]]._fCrowdDistance = MAX_VALUE;
 
             if( fMaxDistance - fMinDistance <= EPSINON && fMaxDistance - fMinDistance >= -EPSINON ){
@@ -372,7 +420,9 @@ void NSGAII::_fnCalcCrowdDistance
                     int iIdx = iCurFront[vsizetSortedFitnessIndex[j]];
                     if( vnodePopulations[iIdx]._fCrowdDistance < MAX_VALUE )
                         vnodePopulations[iIdx]._fCrowdDistance +=
-                            (vnodePopulations[iCurFront[vsizetSortedFitnessIndex[j+1]]]._vfFitness[i] - vnodePopulations[iCurFront[vsizetSortedFitnessIndex[j-1]]]._vfFitness[i]) / (fMaxDistance-fMinDistance);
+                            (vnodePopulations[iCurFront[vsizetSortedFitnessIndex[j+1]]]._vfFitness[i]
+                             - vnodePopulations[iCurFront[vsizetSortedFitnessIndex[j-1]]]._vfFitness[i])
+                             / (fMaxDistance-fMinDistance);
                 }
             }
         }
@@ -711,8 +761,12 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
                         cout<<"\033[4"<<iBackgroundColor<<";35;1m"<<setw(2)<<i<<" \033[0m";
                     }
                 }
-                cout<<"\033[4"<<iBackgroundColor<<";36;1m"<<":"<<vnodeMixedPop[iNo]._vfFitness[0]<<","<<vnodeMixedPop[iNo]._vfFitness[1]<<","<<vnodeMixedPop[iNo]._vfFitness[2]<<"\033[0m";
-                cout<<"\033[4"<<iBackgroundColor<<";37;1m"<<":"<<vnodeMixedPop[iNo]._fCrowdDistance<<"\033[0m";
+                cout<<"\033[4"<<iBackgroundColor<<";36;1m"<<":"
+                    <<vnodeMixedPop[iNo]._vfFitness[0]<<","
+                    <<vnodeMixedPop[iNo]._vfFitness[1]<<","
+                    <<vnodeMixedPop[iNo]._vfFitness[2]<<"\033[0m";
+                cout<<"\033[4"<<iBackgroundColor<<";37;1m"<<":"
+                    <<vnodeMixedPop[iNo]._fCrowdDistance<<"\033[0m";
                 if( vnodeMixedPop[iNo]._bIsDuplicate )
                     cout<<"\033[41;34;1m"<<":Duplicate\033[0m"<<endl;
                 else

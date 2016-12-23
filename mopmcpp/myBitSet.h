@@ -3,10 +3,14 @@
 //
 //Author:       Fuchen Duan
 //
+//
 //Email:        slow295185031@gmail.com
 //
 //CreatedAt:    2016-01-14 15:09:22
 // ---- Program Info End  ----
+
+#ifndef _MY_BITSET_H_
+#define _MY_BITSET_H_
 
 #include <cstddef> // For size_t
 #include <cassert>
@@ -15,6 +19,7 @@
 
 template <size_t _Nw>
 class myBitSet{
+
     typedef unsigned long _WordT;
     static const size_t _CHAR_BIT = 8;
     static const size_t _BITS_PER_WORD = _CHAR_BIT * sizeof(_WordT);
@@ -80,9 +85,12 @@ class myBitSet{
       6, /* 250 */ 7, /* 251 */ 6, /* 252 */ 7, /* 253 */ 7, /* 254 */
       8  /* 255 */
     }; // end _Bit_count
+
     size_t wordIndex(size_t bitIndex)
     { return bitIndex >> _ADDRESS_BITS_PER_WORD; };
 
+    size_t wordIndex(size_t bitIndex) const
+    { return bitIndex >> _ADDRESS_BITS_PER_WORD; };
     public:
 
     myBitSet()
@@ -91,7 +99,7 @@ class myBitSet{
             _M_w[i] = 0;
         }
     };
-    //myBitSet(size_t _Nw);
+
     myBitSet(const myBitSet &rhs)
     {
         if(this != &rhs)
@@ -104,7 +112,13 @@ class myBitSet{
     };
     //~myBitSet();
 
-    bool test(size_t _pos)
+    bool test(size_t _pos) //Test 1 or 0 in _pos
+    {
+        size_t _w_Index = wordIndex(_pos);
+        return ((_M_w[_w_Index]) & (1ul << _pos)) != 0;
+    };
+
+    bool test(size_t _pos) const
     {
         size_t _w_Index = wordIndex(_pos);
         return ((_M_w[_w_Index]) & (1ul << _pos)) != 0;
@@ -115,28 +129,33 @@ class myBitSet{
         size_t _w_Index = wordIndex(_pos);
         _M_w[_w_Index] |= 1ul << _pos;
     };
+
     void set()
     {
         size_t _w_Index = _M_PhysicLength;
         while( _w_Index > 0 )
             _M_w[--_w_Index] = ~0ul;
     };
+
     void reset(size_t _pos)
     {
         size_t _w_Index = wordIndex(_pos);
         _M_w[_w_Index] &= ~(1ul << _pos);
     };
+
     void reset()
     {
         size_t _w_Index = _M_PhysicLength;
         while( _w_Index > 0 )
             _M_w[--_w_Index] = 0;
     };
+
     void flip(size_t _pos)
     {
         size_t _w_Index = wordIndex(_pos);
         _M_w[_w_Index] ^= (1ul << _pos);
     };
+
     //void
         //flip();
     int count()
@@ -155,6 +174,24 @@ class myBitSet{
         _M_BitCount = _result;
         return _result;
     };
+
+    int count() const
+    {
+        if(_M_BitCount > -1)
+            return _M_BitCount;
+        int _result = 0;
+        const unsigned char* _byte_ptr = (const unsigned char*) _M_w; //8 bit per char
+        const unsigned char* _end_ptr
+            = ((const unsigned char*) _M_w) + sizeof(_M_w[0]) * _M_PhysicLength;
+        while( _byte_ptr < _end_ptr )
+        {
+            _result += _S_bit_count[*_byte_ptr];
+            _byte_ptr ++;
+        }
+        _M_BitCount = _result;
+        return _result;
+    };
+
     int SSE4_count()
     {
         if(_M_BitCount > -1)
@@ -166,10 +203,29 @@ class myBitSet{
         _M_BitCount = _result;
         return _result;
     };
+
+    int SSE4_count() const
+    {
+        if(_M_BitCount > -1)
+            return _M_BitCount;
+        int _result = 0;
+        for(size_t i=0; i<_M_PhysicLength; i++){
+            _result += _mm_popcnt_u64(_M_w[i]);
+        }
+        _M_BitCount = _result;
+        return _result;
+    };
+
     size_t size()
     {
         return _M_LogicLength;
     };
+
+    size_t size() const
+    {
+        return _M_LogicLength;
+    };
+
     std::vector<int> getIndices()
     {
         if(!_M_Indices.empty() || _M_BitCount == 0)
@@ -219,6 +275,7 @@ class myBitSet{
         }
         return *this;
     };
+
     myBitSet & operator&=(const myBitSet &rhs)
     {
         for(size_t i=0; i<_M_PhysicLength; i++){
@@ -226,6 +283,7 @@ class myBitSet{
         }
         return *this;
     };
+
     myBitSet operator|(const myBitSet &rhs)
     {
         for(size_t i=0; i<_M_PhysicLength; i++){
@@ -233,6 +291,7 @@ class myBitSet{
         }
         return *this;
     };
+
     myBitSet & operator|=(const myBitSet &rhs)
     {
         for(size_t i=0; i<_M_PhysicLength; i++){
@@ -240,6 +299,7 @@ class myBitSet{
         }
         return *this;
     };
+
     myBitSet operator^(const myBitSet &rhs)
     {
         for(size_t i=0; i<_M_PhysicLength; i++){
@@ -247,6 +307,7 @@ class myBitSet{
         }
         return *this;
     };
+
     myBitSet & operator^=(const myBitSet &rhs)
     {
         for(size_t i=0; i<_M_PhysicLength; i++){
@@ -254,6 +315,7 @@ class myBitSet{
         }
         return *this;
     };
+
     myBitSet & operator=(const myBitSet &rhs)
     {
         if(this != &rhs)
@@ -265,9 +327,13 @@ class myBitSet{
         }
         return *this;
     };
+
     _WordT operator[](size_t _pos)
     {
         size_t _w_Index = wordIndex(_pos);
         return _M_w[_w_Index] & (1ul << _pos);
     };
+
 };
+
+#endif // _MY_BITSET_H_

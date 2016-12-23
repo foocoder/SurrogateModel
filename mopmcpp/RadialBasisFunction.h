@@ -8,6 +8,9 @@
 //CreatedAt:    2016-12-03 14:38:14
 // ---- Program Info End  ----
 
+#ifndef _RBF_H_
+#define _RBF_H_
+
 #include <vector>
 #include "matrix.h"
 
@@ -27,36 +30,85 @@ class RadialBasisFunction{
         Matrix<double> _mdWeight;
     private:
         /*产生指定区间上均匀分布的随机数*/
-        double _fnUniform(double floor,double ceil);
-        /*产生区间[floor,ceil]上服从正态分布N[mu,sigma]的随机数*/
-        double _fnRandomNorm(double mu,double sigma,double floor,double ceil);
+        double _fnUniform(
+                double floor,
+                double ceil
+                );
+        /*产生区间[floor, ceil]上服从正态分布N[mu, sigma]的随机数*/
+        double _fnRandomNorm(
+                double mu,
+                double sigma,
+                double floor,
+                double ceil
+                );
         /*计算样本点距离*/
-        int _fnGetDistance( const std::vector<int> &lhs, const std::vector<int> &rhs );
+        int _fnGetDistance(
+                const std::vector<int> &lhs,
+                const std::vector<int> &rhs
+                );
         /*寻找样本离哪个中心最近*/
-        int _fnGetNearestCenter(const std::vector<int> &inNode);
+        int _fnGetNearestCenter(
+                const std::vector<int> &inNode
+                );
         /*计算簇的质心*/
-        std::vector<int> _fnRecalcCenter(const std::vector<std::vector<int>> &group);
+        std::vector<int> _fnRecalcCenter(
+                const std::vector<std::vector<int>> &group
+                );
         /*KMeans聚类法产生数据中心*/
-        void _fnKPrototype();
+        void _fnKPrototype(
+
+                );
         /*生成Green矩阵*/
-        void _fnCalcGreen();
+        void _fnCalcGreen(
+
+                );
         /*求一个矩阵的伪逆*/
-        Matrix<double> _fnGetGereralizedInverse(const Matrix<double> &matrix);
-        //自组织选择法, 根据各中心之间最小距离确定扩展常数
-        void _fnCalcDelta();
+        Matrix<double> _fnGetGereralizedInverse(
+                const Matrix<double> &matrix
+                );
+        //自组织选择法 根据各中心之间最小距离确定扩展常数
+        void _fnCalcDelta(
+
+                );
     public:
-        RadialBasisFunction();
-        RadialBasisFunction(int iNum, int iHide, int iDim, const std::vector<std::vector<int>> &vviSample, const std::vector<double> &vdReal);
-        ~RadialBasisFunction();
+        RadialBasisFunction(
+
+                );
+        RadialBasisFunction(
+                int iNum,
+                int iHide,
+                int iDim,
+                const std::vector<std::vector<int>> &vviSample,
+                const std::vector<double> &vdReal
+                );
+        ~RadialBasisFunction(
+
+                );
 
         /*运行RBF网络*/
-        void runRBF();
+        void runRBF(
+
+                );
         /*根据网络，由输入得到输出*/
-        double getEstimation( const std::vector<int> &inNode );
+        double getEstimation(
+                const std::vector<int> &inNode
+                );
+        /*根据网络，由输入得到输出*/
+        double getEstimation(
+                const std::vector<int> &inNode
+                ) const;
         /*获得样本数量*/
-        int getNumberSample(){ return _iNumSample; }
+        int getNumberSample(
+
+                ){ return _iNumSample; }
         /*获得隐层数量*/
-        int getNumberHidden(){ return _iHidNode; }
+        int getNumberHidden(
+
+                ){ return _iHidNode; }
         /*获得样本维数*/
-        int getNumberDim(){ return _iInDim; }
+        int getNumberDim(
+
+                ){ return _iInDim; }
 };
+
+#endif // _RBF_H_

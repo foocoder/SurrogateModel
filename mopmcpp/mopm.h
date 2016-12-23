@@ -8,12 +8,21 @@
 //CreatedAt:    2016-01-03 10:54:58
 // ---- Program Info End  ----
 
+#ifndef _MOPM_H_
+#define _MOPM_H_
+
 #include <vector>
 #include "myBitSet.h"
 #include "RadialBasisFunction.h"
 
+#ifndef N
 #define N 573652
+#endif // define N
+
+#ifndef M
 #define M 273
+#endif //define M
+
 #define MAX_VALUE 10000000
 
 template <typename T>
@@ -62,6 +71,13 @@ class NSGAII
     std::vector<IndividualNode> _fnInitialization(
 
             );
+    std::vector<RadialBasisFunction> _fnBuildModel(
+            const std::vector<IndividualNode> &vnodeDatabase
+            );
+    void _fnCalcEstimation(
+            const std::vector<RadialBasisFunction> & vmRBFModels,
+            std::vector<IndividualNode> & vnodePopulations
+            );
     void _fnCalcFiteness(
             std::vector<IndividualNode> &vnodePopulations
             );
@@ -99,3 +115,5 @@ class NSGAII
             std::vector<IndividualNode> & vnodePopulations
             );
 };
+
+#endif //_MOPM_H_
