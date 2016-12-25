@@ -810,3 +810,103 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
     return vnodeOutput;
 }
 
+vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
+{
+    //for debug
+    //ofstream logfile("./logs");
+
+    clock_t start, end, cmpTime, cstart, cend;
+    start = clock();
+
+    vector<IndividualNode> vnodePopulations = _fnInitialization();
+    _fnCalcFiteness( vnodePopulations );
+    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+    _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
+
+    vector<IndividualNode> lastPop;
+    int cnt = 0;
+    int iGene;
+    cmpTime = 0;
+    for( iGene=0; iGene<50; iGene++ )
+    {
+        //for debug
+        #ifdef _DEBUG_
+        //logfile<<endl;
+        //logfile<<"Info "<<iGene<<" th Populations"<<endl;
+        //_fnDebugPrintInfo(logfile, vnodePopulations);
+        #endif
+
+        vector<IndividualNode> vnodeChildPop = _fnSelectMatingPool( vnodePopulations );
+        _fnReproduceOff( vnodeChildPop );
+        _fnCalcFiteness( vnodeChildPop );
+        vector<IndividualNode> vnodeMixedPop;
+        vnodeMixedPop.reserve( 2*_iPopSize );
+        vnodeMixedPop.insert( vnodeMixedPop.end(),vnodePopulations.begin(),vnodePopulations.end() );
+        vnodeMixedPop.insert( vnodeMixedPop.end(),vnodeChildPop.begin(),vnodeChildPop.end() );
+        vector<vector<int>> vviMixFrontList = _fnNonDominateSort( vnodeMixedPop );
+
+        _fnCalcCrowdDistance( vnodeMixedPop, vviMixFrontList );
+
+        //for debug
+        #ifdef _DEBUG_
+        int iFrontCnt        = 0;
+        int iIndCnt          = 0;
+        int iBackgroundColor = 0;
+        for( auto vFrontlist : vviMixFrontList ){
+            iBackgroundColor = iFrontCnt % 8;
+            for( auto iNo : vFrontlist ){
+                cout<<"\033[4"<<iBackgroundColor<<";32;1m"<<setw(3)<<iFrontCnt+1<<"th Front "<<setw(3)<<++iIndCnt<<":";
+                for( int i=0; i<M; ++i ){
+                    if( vnodeMixedPop[iNo]._bitTransaction.test(i) ){
+                        cout<<"\033[4"<<iBackgroundColor<<";35;1m"<<setw(2)<<i<<" \033[0m";
+                    }
+                }
+                cout<<"\033[4"<<iBackgroundColor<<";36;1m"<<":"
+                    <<vnodeMixedPop[iNo]._vfFitness[0]<<","
+                    <<vnodeMixedPop[iNo]._vfFitness[1]<<","
+                    <<vnodeMixedPop[iNo]._vfFitness[2]<<"\033[0m";
+                cout<<"\033[4"<<iBackgroundColor<<";37;1m"<<":"
+                    <<vnodeMixedPop[iNo]._fCrowdDistance<<"\033[0m";
+                if( vnodeMixedPop[iNo]._bIsDuplicate )
+                    cout<<"\033[41;34;1m"<<":Duplicate\033[0m"<<endl;
+                else
+                    cout<<"\033[4"<<iBackgroundColor<<";34;1m"<<":Single\033[0m"<<endl;
+            }
+            iFrontCnt++;
+        }
+        //end debug
+        #endif
+
+        vnodePopulations.clear();
+        vnodePopulations = _fnNatureSelectionNoDuplicate(vnodeMixedPop, vviMixFrontList);
+
+        //cstart = clock();
+        if(_fnCheckSimilar( vnodePopulations, lastPop)){
+            cnt++;
+        }
+        if( cnt > 5 )
+            break;
+        //cend = clock();
+        //cmpTime += cend - cstart;
+
+        lastPop.clear();
+        lastPop = vnodePopulations;
+        cout<<iGene<<"th iterators finished ..."<<endl;
+    }
+
+    end = clock();
+    spendTime = (double)(end-start) / CLOCKS_PER_SEC;
+
+    traversNode = _iPopSize * iGene;
+    vector<IndividualNode> vnodeOutput;
+    vnodeOutput.reserve(_iPopSize);
+    for(const auto &i:vnodePopulations)
+    {
+        if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N )
+        {
+            vnodeOutput.push_back(i);
+        }
+    }
+    return vnodeOutput;
+}
+
