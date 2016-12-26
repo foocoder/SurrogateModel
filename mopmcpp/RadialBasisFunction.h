@@ -46,6 +46,11 @@ class RadialBasisFunction{
                 const std::vector<int> &lhs,
                 const std::vector<int> &rhs
                 );
+        /*计算样本点距离*/
+        int _fnGetDistance(
+                const std::vector<int> &lhs,
+                const std::vector<int> &rhs
+                ) const;
         /*寻找样本离哪个中心最近*/
         int _fnGetNearestCenter(
                 const std::vector<int> &inNode

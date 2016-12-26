@@ -24,7 +24,11 @@ using namespace std;
 #define EPSINON 1e-18
 
 template <typename T>
-vector<size_t> fnSortIndex(const vector<T> & v, int iType)
+vector<size_t> fnSortIndex
+(
+ const vector<T> & v,
+ int iType
+ )
 {
     //iType : 0 for ascend and 1 for descend
     vector<size_t> idx(v.size());
@@ -203,7 +207,10 @@ void NSGAII::_fnCalcEstimation
     }
 }
 
-void NSGAII::_fnCalcFiteness( vector<IndividualNode> &vnodePopulations )
+void NSGAII::_fnCalcFiteness
+(
+ vector<IndividualNode> &vnodePopulations
+ )
 {
     double fMaxArea = 0, fMinArea = MAX_VALUE;
     for(int i=0; i<_iPopSize; i++)
@@ -290,7 +297,10 @@ void NSGAII::_fnCalcFiteness( vector<IndividualNode> &vnodePopulations )
     //cout<<"NSGAII::_fnCalcFiteness Finish!"<<endl;
 }
 
-vector< vector< int > > NSGAII::_fnNonDominateSort(vector<IndividualNode> & vnodePopulations)
+vector< vector< int > > NSGAII::_fnNonDominateSort
+(
+ vector<IndividualNode> & vnodePopulations
+ )
 {
     int iPopSize = vnodePopulations.size();
     vector< vector<int> > vviIDominate(iPopSize);
@@ -430,7 +440,10 @@ void NSGAII::_fnCalcCrowdDistance
     //cout<<"NSGAII::_fnCalcCrowdDistance Finish!"<<endl;
 }
 
-vector<IndividualNode> NSGAII::_fnSelectMatingPool(const vector<IndividualNode> &vnodePopulations)
+vector<IndividualNode> NSGAII::_fnSelectMatingPool
+(
+ const vector<IndividualNode> &vnodePopulations
+ )
 {
     vector<IndividualNode> vnodeMatePool(_iPopSize);
     for(int i=0; i<_iPopSize; i++)
@@ -467,7 +480,10 @@ vector<IndividualNode> NSGAII::_fnSelectMatingPool(const vector<IndividualNode> 
     return vnodeMatePool;
 }
 
-void NSGAII::_fnReproduceOff(vector<IndividualNode> &vnodeMatePool)
+void NSGAII::_fnReproduceOff
+(
+ vector<IndividualNode> &vnodeMatePool
+ )
 {
     //cout<<"NSGAII::_fnReproduceOff start!"<<endl;
     //cout<<"Cross Over"<<endl;
@@ -650,7 +666,11 @@ vector<IndividualNode>  NSGAII::_fnNatureSelectionNoDuplicate
     return vnodeNextPop;
 }
 
-bool NSGAII::_fnCheckSimilar( vector<IndividualNode> lhs, vector<IndividualNode> rhs ){
+bool NSGAII::_fnCheckSimilar
+(
+ vector<IndividualNode> lhs,
+ vector<IndividualNode> rhs
+ ){
     if( rhs.empty() ) return false;
     auto less = []( IndividualNode i1, IndividualNode i2 ){
             double d1 = i1._vfFitness[0], d2 = i2._vfFitness[0];
@@ -699,7 +719,10 @@ bool NSGAII::_fnCheckSimilar( vector<IndividualNode> lhs, vector<IndividualNode>
     return false;
 }
 
-void NSGAII::_fnDebugPrintInfo( ofstream &logs, vector<IndividualNode> & vnodePopulations ){
+void NSGAII::_fnDebugPrintInfo
+(
+ ofstream &logs, vector<IndividualNode> & vnodePopulations
+ ){
     for( auto & i:vnodePopulations ){
         for( int j=0; j<_iPopDims; ++j ){
             if( i._bitTransaction.test(j) ){
@@ -710,7 +733,11 @@ void NSGAII::_fnDebugPrintInfo( ofstream &logs, vector<IndividualNode> & vnodePo
     }
 }
 
-vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
+vector<IndividualNode>  NSGAII::_fnMOEC
+(
+ int & traversNode,
+ double & spendTime
+ )
 {
     //for debug
     //ofstream logfile("./logs");
@@ -722,12 +749,13 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
     _fnCalcFiteness( vnodePopulations );
     vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
     _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
+    vector<RadialBasisFunction> vmRBFModels = _fnBuildModel( vnodePopulations );
 
     vector<IndividualNode> lastPop;
     int cnt = 0;
     int iGene;
     cmpTime = 0;
-    for( iGene=0; iGene<50; iGene++ )
+    for( iGene=0; iGene<10; iGene++ )
     {
         //for debug
         #ifdef _DEBUG_
@@ -736,49 +764,11 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
         //_fnDebugPrintInfo(logfile, vnodePopulations);
         #endif
 
-        vector<IndividualNode> vnodeChildPop = _fnSelectMatingPool( vnodePopulations );
-        _fnReproduceOff( vnodeChildPop );
-        _fnCalcFiteness( vnodeChildPop );
-        vector<IndividualNode> vnodeMixedPop;
-        vnodeMixedPop.reserve( 2*_iPopSize );
-        vnodeMixedPop.insert( vnodeMixedPop.end(),vnodePopulations.begin(),vnodePopulations.end() );
-        vnodeMixedPop.insert( vnodeMixedPop.end(),vnodeChildPop.begin(),vnodeChildPop.end() );
-        vector<vector<int>> vviMixFrontList = _fnNonDominateSort( vnodeMixedPop );
-
-        _fnCalcCrowdDistance( vnodeMixedPop, vviMixFrontList );
-
-        //for debug
-        #ifdef _DEBUG_
-        int iFrontCnt        = 0;
-        int iIndCnt          = 0;
-        int iBackgroundColor = 0;
-        for( auto vFrontlist : vviMixFrontList ){
-            iBackgroundColor = iFrontCnt % 8;
-            for( auto iNo : vFrontlist ){
-                cout<<"\033[4"<<iBackgroundColor<<";32;1m"<<setw(3)<<iFrontCnt+1<<"th Front "<<setw(3)<<++iIndCnt<<":";
-                for( int i=0; i<M; ++i ){
-                    if( vnodeMixedPop[iNo]._bitTransaction.test(i) ){
-                        cout<<"\033[4"<<iBackgroundColor<<";35;1m"<<setw(2)<<i<<" \033[0m";
-                    }
-                }
-                cout<<"\033[4"<<iBackgroundColor<<";36;1m"<<":"
-                    <<vnodeMixedPop[iNo]._vfFitness[0]<<","
-                    <<vnodeMixedPop[iNo]._vfFitness[1]<<","
-                    <<vnodeMixedPop[iNo]._vfFitness[2]<<"\033[0m";
-                cout<<"\033[4"<<iBackgroundColor<<";37;1m"<<":"
-                    <<vnodeMixedPop[iNo]._fCrowdDistance<<"\033[0m";
-                if( vnodeMixedPop[iNo]._bIsDuplicate )
-                    cout<<"\033[41;34;1m"<<":Duplicate\033[0m"<<endl;
-                else
-                    cout<<"\033[4"<<iBackgroundColor<<";34;1m"<<":Single\033[0m"<<endl;
-            }
-            iFrontCnt++;
-        }
-        //end debug
-        #endif
-
-        vnodePopulations.clear();
-        vnodePopulations = _fnNatureSelectionNoDuplicate(vnodeMixedPop, vviMixFrontList);
+        _fnSMEC( vmRBFModels, vnodePopulations );
+        _fnCalcFiteness( vnodePopulations );
+        vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+        _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
+        vmRBFModels = _fnBuildModel( vnodePopulations );
 
         //cstart = clock();
         if(_fnCheckSimilar( vnodePopulations, lastPop)){
@@ -797,6 +787,7 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
     end = clock();
     spendTime = (double)(end-start) / CLOCKS_PER_SEC;
 
+    _fnCalcFiteness( vnodePopulations );
     traversNode = _iPopSize * iGene;
     vector<IndividualNode> vnodeOutput;
     vnodeOutput.reserve(_iPopSize);
@@ -810,35 +801,22 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
     return vnodeOutput;
 }
 
-vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
+void NSGAII::_fnSMEC
+(
+ const vector<RadialBasisFunction> & vmRBFModels,
+ vector<IndividualNode> & vnodePopulations
+ )
 {
-    //for debug
-    //ofstream logfile("./logs");
 
-    clock_t start, end, cmpTime, cstart, cend;
-    start = clock();
-
-    vector<IndividualNode> vnodePopulations = _fnInitialization();
-    _fnCalcFiteness( vnodePopulations );
-    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
-    _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
-
-    vector<IndividualNode> lastPop;
+    /* vector<IndividualNode> lastPop; */
     int cnt = 0;
     int iGene;
-    cmpTime = 0;
     for( iGene=0; iGene<50; iGene++ )
     {
-        //for debug
-        #ifdef _DEBUG_
-        //logfile<<endl;
-        //logfile<<"Info "<<iGene<<" th Populations"<<endl;
-        //_fnDebugPrintInfo(logfile, vnodePopulations);
-        #endif
 
         vector<IndividualNode> vnodeChildPop = _fnSelectMatingPool( vnodePopulations );
         _fnReproduceOff( vnodeChildPop );
-        _fnCalcFiteness( vnodeChildPop );
+        _fnCalcEstimation( vmRBFModels, vnodeChildPop );
         vector<IndividualNode> vnodeMixedPop;
         vnodeMixedPop.reserve( 2*_iPopSize );
         vnodeMixedPop.insert( vnodeMixedPop.end(),vnodePopulations.begin(),vnodePopulations.end() );
@@ -880,33 +858,16 @@ vector<IndividualNode>  NSGAII::_fnMOEC( int & traversNode, double & spendTime )
         vnodePopulations.clear();
         vnodePopulations = _fnNatureSelectionNoDuplicate(vnodeMixedPop, vviMixFrontList);
 
-        //cstart = clock();
-        if(_fnCheckSimilar( vnodePopulations, lastPop)){
-            cnt++;
-        }
-        if( cnt > 5 )
-            break;
-        //cend = clock();
-        //cmpTime += cend - cstart;
+        /* if(_fnCheckSimilar( vnodePopulations, lastPop)){ */
+        /*     cnt++; */
+        /* } */
+        /* if( cnt > 5 ) */
+        /*     break; */
 
-        lastPop.clear();
-        lastPop = vnodePopulations;
-        cout<<iGene<<"th iterators finished ..."<<endl;
+        /* lastPop.clear(); */
+        /* lastPop = vnodePopulations; */
+        cout<<iGene<<"th surrogate model iterators finished ..."<<endl;
     }
 
-    end = clock();
-    spendTime = (double)(end-start) / CLOCKS_PER_SEC;
-
-    traversNode = _iPopSize * iGene;
-    vector<IndividualNode> vnodeOutput;
-    vnodeOutput.reserve(_iPopSize);
-    for(const auto &i:vnodePopulations)
-    {
-        if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N )
-        {
-            vnodeOutput.push_back(i);
-        }
-    }
-    return vnodeOutput;
 }
 

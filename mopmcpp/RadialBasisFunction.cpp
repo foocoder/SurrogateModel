@@ -90,6 +90,14 @@ int RadialBasisFunction::_fnGetDistance( const vector<int> &lhs, const vector<in
     return iDist;
 }
 
+/*计算样本距离*/
+int RadialBasisFunction::_fnGetDistance( const vector<int> &lhs, const vector<int> &rhs )const{
+    int iDist = 0.0;
+    for( int i=0; i<_iInDim; ++i ){
+        iDist += abs(lhs[i] - rhs[i]);
+    }
+    return iDist;
+}
 /*寻找样本离哪个中心最近*/
 int RadialBasisFunction::_fnGetNearestCenter(const vector<int> &inNode){
     int iIdx=-1;

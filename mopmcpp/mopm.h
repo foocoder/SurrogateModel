@@ -38,7 +38,7 @@ typedef struct IndividualNode
     double _fCrowdDistance;
     bool _bIsDuplicate;
 
-    IndividualNode():
+    IndividualNode()
     {
         _iFrontNo = 0;
         _fCrowdDistance = 0;
@@ -105,6 +105,10 @@ class NSGAII
     std::vector<IndividualNode> _fnMOEC(
             int &,
             double &
+            );
+    void _fnSMEC(
+            const std::vector<RadialBasisFunction> & vmRBFModels,
+            std::vector<IndividualNode> & vnodePopulations
             );
     bool _fnCheckSimilar(
             std::vector<IndividualNode> lhs,
