@@ -285,7 +285,7 @@ void NSGAII::_fnCalcFiteness
 
     // Normalization to Area;
     //cout<<fMaxArea<<":"<<fMinArea<<endl;
-    if(!(fMaxArea-fMinArea >= -EPSINON && fMaxArea-fMaxArea <= EPSINON))
+    if(!(fMaxArea-fMinArea >= -EPSINON && fMaxArea-fMinArea <= EPSINON))
     {
         for( int i=0; i<_iPopSize; i++ )
         {
