@@ -118,6 +118,10 @@ class NSGAII
             std::ofstream & logs,
             std::vector<IndividualNode> & vnodePopulations
             );
+    void _fnLocalSearch(
+            const IndividualNode &,
+            const std::vector<double> &
+            )
 };
 
 #endif //_MOPM_H_

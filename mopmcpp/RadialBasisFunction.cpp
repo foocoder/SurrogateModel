@@ -14,6 +14,7 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
+#include <cstring>
 #include <vector>
 #include "RadialBasisFunction.h"
 #include "matrix.h"
@@ -27,7 +28,8 @@ RadialBasisFunction::RadialBasisFunction
  int iHide,
  int iDim,
  const std::vector<std::vector<int>> &vviSample,
- const std::vector<double> &vdReal
+ const std::vector<double> &vdReal,
+ const std::string &strKernalFun
  ):
     _iNumSample( iNum ),
     _iHidNode( iHide ),
@@ -42,6 +44,16 @@ RadialBasisFunction::RadialBasisFunction
     for( int i=0; i<_iNumSample; ++i ){
         _mdOutReal.put( i, 0, vdReal[i] );
     }
+    if( strKernalFun == "Cubic" )
+        _rbfKernalFunc = k_Cubic;
+    if( strKernalFun == "ThinPlateSpline" )
+        _rbfKernalFunc = k_ThinPlateSpline;
+    if( strKernalFun == "Gaussian" )
+        _rbfKernalFunc = k_Gaussian;
+    if( strKernalFun == "MultiQuadratic" )
+        _rbfKernalFunc = k_MultiQuadratic;
+    if( strKernalFun == "InverseMultiQuadratic" )
+        _rbfKernalFunc = k_InverseMultiQuadratic;
 }
 RadialBasisFunction::~RadialBasisFunction(){}
 
@@ -62,25 +74,123 @@ inline double RadialBasisFunction::_fnRandomNorm( double mu, double sigma, doubl
 }
 
 /*根据网络，由输入得到输出*/
-double RadialBasisFunction::getEstimation( const vector<int> & inNode ){
+double RadialBasisFunction::getEstimation
+(
+ const vector<int> & inNode
+ ){
     double dResult = 0.0;
-    for( int i=0; i<_iHidNode; ++i ){
-        int iDist = _fnGetDistance( inNode, _vviCenter[i] );
-        dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
+    switch( _rbfKernalFunc ){
+        case k_Cubic:
+            //cout<<"k_Cubic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*(iDist*iDist*iDist);
+            }
+            break;
+        case k_ThinPlateSpline:
+            //cout<<"k_ThinPlateSpline"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*(iDist*iDist*log(iDist));
+            }
+            break;
+        case k_Gaussian:
+            //cout<<"k_Gaussian"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
+            }
+            break;
+        case k_MultiQuadratic:
+            //cout<<"k_MultiQuadratic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]);
+            }
+            break;
+        case k_InverseMultiQuadratic:
+            //cout<<"k_InverseMultiQuadratic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*( 1.0 / sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]) );
+            }
+            break;
+        default:
+            cout<<"Err"<<endl;
+            exit(-1);
+            break;
     }
     return dResult;
 }
 
 /*根据网络，由输入得到输出*/
-double RadialBasisFunction::getEstimation( const vector<int> & inNode ) const
+double RadialBasisFunction::getEstimation
+(
+ const vector<int> & inNode
+ ) const
 {
     double dResult = 0.0;
-    for( int i=0; i<_iHidNode; ++i ){
-        int iDist = _fnGetDistance( inNode, _vviCenter[i] );
-        dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
+    switch( _rbfKernalFunc ){
+        case k_Cubic:
+            //cout<<"k_Cubic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*(iDist*iDist*iDist);
+            }
+            break;
+        case k_ThinPlateSpline:
+            //cout<<"k_ThinPlateSpline"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*(iDist*iDist*log(iDist));
+            }
+            break;
+        case k_Gaussian:
+            //cout<<"k_Gaussian"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
+            }
+            break;
+        case k_MultiQuadratic:
+            //cout<<"k_MultiQuadratic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]);
+            }
+            break;
+        case k_InverseMultiQuadratic:
+            //cout<<"k_InverseMultiQuadratic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = _fnGetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*( 1.0 / sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]) );
+            }
+            break;
+        default:
+            cout<<"Err"<<endl;
+            exit(-1);
+            break;
     }
     return dResult;
 }
+
+// 计算模型均方差
+void RadialBasisFunction::_fnCalcRMSE(){
+    _dRMSE = 0.0;
+    for( int i=0; i<_iNumSample; ++i ){
+        double dErr = fabs( getEstimation(_vviInSample[i]) - _vdOutReal[i] );
+        _dRMSE += dErr*dErr;
+    }
+    _dRMSE = sqrt( _dRMSE );
+}
+
+inline double RadialBasisFunction::getRMSE(){
+    if( _dRMSE < 0 ){
+        _fnCalcRMSE();
+    }
+    return _dRMSE;
+}
+
 /*计算样本距离*/
 int RadialBasisFunction::_fnGetDistance( const vector<int> &lhs, const vector<int> &rhs ){
     int iDist = 0.0;

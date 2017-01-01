@@ -38,6 +38,9 @@
 # Memory Dump Core
 core
 
+# tags
+tags
+*.tag
 # Logs
 logs
 *.log

@@ -101,6 +101,7 @@ NSGAII::NSGAII
     //cout<<"NSGAII::NSGAII Finish!"<<endl;
 }
 
+// 初始化工作
 vector<IndividualNode> NSGAII::_fnInitialization()
 {
     vector<IndividualNode> vnodePopulations;
@@ -160,6 +161,7 @@ vector<IndividualNode> NSGAII::_fnInitialization()
     return vnodePopulations;
 }
 
+// 训练代理模型
 vector<RadialBasisFunction> NSGAII::_fnBuildModel
 (
  const vector<IndividualNode> & vnodeDatabase
@@ -181,9 +183,9 @@ vector<RadialBasisFunction> NSGAII::_fnBuildModel
         vfRealAre[i] = vnodeDatabase[i]._vfFitness[2];
     }
 
-    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup );
-    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc );
-    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre );
+    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup, "Cubic" );
+    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc, "Cubic" );
+    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre, "Cubic" );
 
     rbfSup.runRBF();
     rbfOcc.runRBF();
@@ -191,6 +193,7 @@ vector<RadialBasisFunction> NSGAII::_fnBuildModel
     return { rbfSup, rbfOcc, rbfAre };
 }
 
+//利用代理模型评估个体适应度
 void NSGAII::_fnCalcEstimation
 (
  const vector<RadialBasisFunction> & vmRBFModels,
@@ -207,6 +210,16 @@ void NSGAII::_fnCalcEstimation
     }
 }
 
+// Local Search
+void NSGAII::_fnLocalSearch
+(
+  const IndividualNode & nodeInd,
+  const vector<double> & vdLambda
+  ){
+
+}
+
+// 计算个体真实适应度
 void NSGAII::_fnCalcFiteness
 (
  vector<IndividualNode> &vnodePopulations
@@ -771,17 +784,19 @@ vector<IndividualNode>  NSGAII::_fnMOEC
         vmRBFModels = _fnBuildModel( vnodePopulations );
 
         //cstart = clock();
-        if(_fnCheckSimilar( vnodePopulations, lastPop)){
-            cnt++;
-        }
-        if( cnt > 5 )
-            break;
+        //if(_fnCheckSimilar( vnodePopulations, lastPop)){
+            //cnt++;
+        //}
+        //if( cnt > 5 )
+            //break;
         //cend = clock();
         //cmpTime += cend - cstart;
 
         lastPop.clear();
         lastPop = vnodePopulations;
+        #ifdef _DEBUG_
         cout<<iGene<<"th iterators finished ..."<<endl;
+        #endif
     }
 
     end = clock();
@@ -814,15 +829,20 @@ void NSGAII::_fnSMEC
     for( iGene=0; iGene<50; iGene++ )
     {
 
+        // 选择交配池
         vector<IndividualNode> vnodeChildPop = _fnSelectMatingPool( vnodePopulations );
+        // 产生子代个体
         _fnReproduceOff( vnodeChildPop );
+        // 使用代理模型估计个体目标值
         _fnCalcEstimation( vmRBFModels, vnodeChildPop );
+        // 将子代与父代混合一起
         vector<IndividualNode> vnodeMixedPop;
         vnodeMixedPop.reserve( 2*_iPopSize );
         vnodeMixedPop.insert( vnodeMixedPop.end(),vnodePopulations.begin(),vnodePopulations.end() );
         vnodeMixedPop.insert( vnodeMixedPop.end(),vnodeChildPop.begin(),vnodeChildPop.end() );
+        // 对混合种群进行非支配排序
         vector<vector<int>> vviMixFrontList = _fnNonDominateSort( vnodeMixedPop );
-
+        // 对排序后的种群计算拥挤距离
         _fnCalcCrowdDistance( vnodeMixedPop, vviMixFrontList );
 
         //for debug
@@ -856,6 +876,7 @@ void NSGAII::_fnSMEC
         #endif
 
         vnodePopulations.clear();
+        // 对混合种群进行环境选择
         vnodePopulations = _fnNatureSelectionNoDuplicate(vnodeMixedPop, vviMixFrontList);
 
         /* if(_fnCheckSimilar( vnodePopulations, lastPop)){ */
@@ -866,7 +887,9 @@ void NSGAII::_fnSMEC
 
         /* lastPop.clear(); */
         /* lastPop = vnodePopulations; */
+        #ifdef _DEBUG_
         cout<<iGene<<"th surrogate model iterators finished ..."<<endl;
+        #endif
     }
 
 }

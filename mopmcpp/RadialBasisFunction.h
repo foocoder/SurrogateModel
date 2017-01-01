@@ -12,13 +12,25 @@
 #define _RBF_H_
 
 #include <vector>
+#include <cstring>
 #include "matrix.h"
+
+typedef enum KERNAL {
+    k_Cubic,
+    k_ThinPlateSpline,
+    k_Gaussian,
+    k_MultiQuadratic,
+    k_InverseMultiQuadratic
+} rbf_kernal_type;
 
 class RadialBasisFunction{
     private:
         int _iNumSample    = 100;     //输入样本的数量
         int _iHidNode      = 10;   //隐层节点数
         int _iInDim        = 10;    //输入样本维数
+
+        double _dRMSE      = -1.0;  // 均方差
+        rbf_kernal_type _rbfKernalFunc = k_Gaussian; // 核函数类型.
 
         Matrix<double> _mdGreen;         //Green矩阵
         std::vector<std::vector<int>> _vviInSample;  //输入样本
@@ -29,6 +41,8 @@ class RadialBasisFunction{
         std::vector<double> _vdWeight;  //权值矩阵
         Matrix<double> _mdWeight;
     private:
+        // 计算model均方差
+        void _fnCalcRMSE();
         /*产生指定区间上均匀分布的随机数*/
         double _fnUniform(
                 double floor,
@@ -84,7 +98,8 @@ class RadialBasisFunction{
                 int iHide,
                 int iDim,
                 const std::vector<std::vector<int>> &vviSample,
-                const std::vector<double> &vdReal
+                const std::vector<double> &vdReal,
+                const std::string &strKernalFun
                 );
         ~RadialBasisFunction(
 
@@ -114,6 +129,10 @@ class RadialBasisFunction{
         int getNumberDim(
 
                 ){ return _iInDim; }
+
+        double getRMSE(
+
+                );
 };
 
 #endif // _RBF_H_
