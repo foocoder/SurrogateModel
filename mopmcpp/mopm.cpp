@@ -183,9 +183,9 @@ vector<RadialBasisFunction> NSGAII::_fnBuildModel
         vfRealAre[i] = vnodeDatabase[i]._vfFitness[2];
     }
 
-    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup, "Cubic" );
-    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc, "Cubic" );
-    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre, "Cubic" );
+    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup );
+    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc );
+    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre );
 
     rbfSup.runRBF();
     rbfOcc.runRBF();
@@ -204,19 +204,177 @@ void NSGAII::_fnCalcEstimation
         for( int j=0; j<_iPopDims; ++j ){
             viSolution[j] = ( vnodePopulations[i]._bitTransaction.test(j) ? 1 : 0 );
         }
-        vnodePopulations[i]._vfFitness[0] = vmRBFModels[0].getEstimation( viSolution );
-        vnodePopulations[i]._vfFitness[1] = vmRBFModels[1].getEstimation( viSolution );
-        vnodePopulations[i]._vfFitness[2] = vmRBFModels[2].getEstimation( viSolution );
+        vnodePopulations[i]._vfFitness[0]
+            = vmRBFModels[0].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Guassian") );
+        vnodePopulations[i]._vfFitness[1]
+            = vmRBFModels[1].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Guassian") );
+        vnodePopulations[i]._vfFitness[2]
+            = vmRBFModels[2].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Guassian") );
     }
 }
 
-// Local Search
-void NSGAII::_fnLocalSearch
+// Local Search Phase
+void NSGAII::_fnLocalSearchPhase
 (
-  const IndividualNode & nodeInd,
-  const vector<double> & vdLambda
+  vector<IndividualNode> & vnodePopulations,
+  const vector<IndividualNode> & vnodeGlobalDB
   ){
 
+    // 生成 vector<int> 类型 GlobalDB
+    int iDBSize = vnodeGlobalDB.size();
+    vector<vector<int>> vviGlobalDB( iDBSize );
+    for( int i=0; i<iDBSize; ++i ){
+        vector<int> viSolution( _iPopDims );
+        for( int j=0; j<_iPopDims; ++j ){
+            viSolution[i] = ( vnodeGlobalDB[i]._bitTransaction.test(j) ? 1 : 0 );
+        }
+        vviGlobalDB[i] = viSolution;
+    }
+
+    for( int i=0; i<_iPopSize; ++i ){
+        //生成随机权值
+        vector<double> vdAggrWeight( 3 );
+        vdAggrWeight[0] = 1 - sqrt( static_cast<double>(rand())/RAND_MAX );
+        vdAggrWeight[1] = ( 1 - vdAggrWeight[0] ) * ( 1 - static_cast<double>(rand())/RAND_MAX );
+        vdAggrWeight[2] = 1 - vdAggrWeight[0] - vdAggrWeight[1];
+
+        //计算加权聚合函数值
+        vector<double> vdAggrValue( iDBSize );
+        for( int j=0; j<iDBSize; ++j ){
+            vdAggrValue[j] = vdAggrWeight[0] * vnodeGlobalDB[j]._vfFitness[0]
+                + vdAggrWeight[1] * vnodeGlobalDB[j]._vfFitness[1]
+                + vdAggrWeight[2] * vnodeGlobalDB[j]._vfFitness[2];
+        }
+
+        // 利用GlobalDB对聚合函数建模
+        RadialBasisFunction rbfAggr ( iDBSize, 10, _iPopDims, vviGlobalDB, vdAggrValue );
+        rbfAggr.runRBF();
+
+        // 计算Ensemble 权值
+        vector<double> vdLambda( 3 );
+        double fErrGauss = rbfAggr.getRMSE( RadialBasisFunction::GetKernalType("Gaussian") );
+        double fErrMulti = rbfAggr.getRMSE( RadialBasisFunction::GetKernalType("MultiQuadratic") );
+        double fErrInvrs = rbfAggr.getRMSE( RadialBasisFunction::GetKernalType("InverseMultiQuadratic") );
+        vdLambda[0] = ( fErrMulti+fErrInvrs ) / ( 2 * (fErrGauss+fErrMulti+fErrInvrs) );
+        vdLambda[1] = ( fErrGauss+fErrInvrs ) / ( 2 * (fErrGauss+fErrMulti+fErrInvrs) );
+        vdLambda[2] = ( fErrMulti+fErrGauss ) / ( 2 * (fErrGauss+fErrMulti+fErrInvrs) );
+
+        // 计算个体0-1编码
+        vector<int> viInd( _iPopDims );
+        for( int j=0; j<_iPopDims; ++j ){
+            viInd[j] = (vnodePopulations[i]._bitTransaction.test(j) ? 1 : 0);
+        }
+
+        // 对当前个体局部搜索
+        vector<int> viOptima = _fnFindLocalOptima( viInd, rbfAggr, vdLambda );
+
+        // 对局部最优个体构建Node
+        IndividualNode nodeOptima;
+        for( int j=0; j<_iPopDims; ++j ){
+            if( viOptima[j] )
+                nodeOptima._bitTransaction.set(j);
+        }
+
+        // 计算Opt适应度
+        _fnCalcFiteness( nodeOptima );
+
+        // 计算Opt 与Origin 支配关系
+        bool bMask0 = true, bMask1 = true;
+        for( int j=0; j<_iObjDims; ++j ){
+            bMask0 &= (nodeOptima._vfFitness[j] >= vnodePopulations[i]._vfFitness[j]);
+            bMask1 &= (nodeOptima._vfFitness[j] <= vnodePopulations[i]._vfFitness[j]);
+        }
+
+        if( bMask0 && !bMask1 ){ // Opt 支配 Origin
+            vnodePopulations[i] = nodeOptima;
+        }
+        else if( !bMask0 && bMask1 ){ // Origin 支配 Opt
+
+        }
+        else if( bMask0 && bMask1 ){ // Origin 与 Opt 相等
+
+        }
+        else{ // Opt 与 Origin 非支配
+        }
+
+    }
+
+}
+
+// Find Local Optima Using Local Search
+vector<int> NSGAII::_fnFindLocalOptima
+(
+  vector<int> viOriginInd,
+  const RadialBasisFunction & rbfModel,
+  const vector<double> & vdLambda
+  ){
+    double fOptimaValue = _fnGetEnsembleEstimaion( viOriginInd, rbfModel, vdLambda );
+    int iOptimaIdx = -1;
+    for( int i=0; i<_iPopDims; ++i ){
+        viOriginInd[i] ^= 1;
+        double fNeighborOptimaValue
+            = _fnGetEnsembleEstimaion( viOriginInd, rbfModel, vdLambda );
+        if( fNeighborOptimaValue > fOptimaValue )
+            iOptimaIdx = i;
+        viOriginInd[i] ^= 1;
+    }
+    if( iOptimaIdx != -1 ) viOriginInd[iOptimaIdx] ^= 1;
+    return viOriginInd;
+}
+
+// Get Ensemble RBF Model Estimations
+inline double NSGAII::_fnGetEnsembleEstimaion
+(
+  const vector<int> & viInd,
+  const RadialBasisFunction & rbfModel,
+  const vector<double> & vdLambda
+  ){
+    return vdLambda[0] * rbfModel.getEstimation( viInd, RadialBasisFunction::GetKernalType("Gaussian") )
+         + vdLambda[1] * rbfModel.getEstimation( viInd, RadialBasisFunction::GetKernalType("MultiQuadratic") )
+         + vdLambda[2] * rbfModel.getEstimation( viInd, RadialBasisFunction::GetKernalType("InverseMultiQuadratic") );
+}
+
+// 计算单个个体真实适应度值
+void NSGAII::_fnCalcFiteness
+(
+ IndividualNode & nodeInd
+ ){
+
+    myBitSet<N> bitItemTemp;
+    bitItemTemp.set();
+
+    for( int i=0; i<_iPopDims; ++i ){
+        if( nodeInd._bitTransaction.test(i) ){
+            bitItemTemp &= _vbitItemDatabase[i];
+        }
+    }
+    int iFreqNum      = bitItemTemp.SSE4_count();
+    int iCurLength    = nodeInd._bitTransaction.SSE4_count();
+    double fSupport   = static_cast<double>( iFreqNum ) / _iDataSize;
+    double fArea      = fSupport * iCurLength;
+    double fOccupancy = 0;
+    if( fSupport > 0 ){
+        for( int i=0; i<_iDataSize; ++i ){
+            if( bitItemTemp.test(i) )
+                fOccupancy += static_cast<double>(iCurLength) / _viTransLength[i];
+        }
+        fOccupancy /= static_cast<double>(iFreqNum);
+        if( fOccupancy > 0 ){
+            nodeInd._vfFitness.push_back( fSupport );
+            nodeInd._vfFitness.push_back( fOccupancy );
+            nodeInd._vfFitness.push_back( fArea );
+        }
+        else{
+            nodeInd._vfFitness.push_back( 0 );
+            nodeInd._vfFitness.push_back( 0 );
+            nodeInd._vfFitness.push_back( 0 );
+        }
+    }
+    else{
+        nodeInd._vfFitness.push_back( 0 );
+        nodeInd._vfFitness.push_back( 0 );
+        nodeInd._vfFitness.push_back( 0 );
+    }
 }
 
 // 计算个体真实适应度

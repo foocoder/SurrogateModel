@@ -32,8 +32,8 @@ typedef struct IndividualNode
 {
     myBitSet<M> _bitTransaction;
     std::vector<double> _vfFitness;
-    std::vector<double> _vfEstimates;
-    std::vector<int> _viTransaction;
+    //std::vector<double> _vfEstimates;
+    //std::vector<int> _viTransaction;
     int _iFrontNo;
     double _fCrowdDistance;
     bool _bIsDuplicate;
@@ -81,6 +81,9 @@ class NSGAII
     void _fnCalcFiteness(
             std::vector<IndividualNode> &vnodePopulations
             );
+    void _fnCalcFiteness(
+            IndividualNode &vnodePopulations
+            );
     std::vector<std::vector<int> > _fnNonDominateSort(
             std::vector<IndividualNode> &vnodePopulations
             );
@@ -118,10 +121,20 @@ class NSGAII
             std::ofstream & logs,
             std::vector<IndividualNode> & vnodePopulations
             );
-    void _fnLocalSearch(
-            const IndividualNode &,
+    void _fnLocalSearchPhase(
+            std::vector<IndividualNode> &,
+            const std::vector<IndividualNode> &
+            );
+    std::vector<int> _fnFindLocalOptima(
+            std::vector<int> ,
+            const RadialBasisFunction &,
             const std::vector<double> &
-            )
+            );
+    double _fnGetEnsembleEstimaion(
+            const std::vector<int> &,
+            const RadialBasisFunction &,
+            const std::vector<double> &
+            );
 };
 
 #endif //_MOPM_H_
