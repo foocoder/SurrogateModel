@@ -216,6 +216,27 @@ void NSGAII::_fnCalcEstimation
 // Local Search Phase
 void NSGAII::_fnLocalSearchPhase
 (
+  vector<IndividualNode> & vnodePopulations
+  /* const vector<IndividualNode> & vnodeGlobalDB */
+  ){
+
+    for( int i=0; i<_iPopSize; ++i ){
+        //生成随机权值
+        vector<double> vdAggrWeight( 3 );
+        vdAggrWeight[0] = 1 - sqrt( static_cast<double>(rand())/RAND_MAX );
+        vdAggrWeight[1] = ( 1 - vdAggrWeight[0] ) * ( 1 - static_cast<double>(rand())/RAND_MAX );
+        vdAggrWeight[2] = 1 - vdAggrWeight[0] - vdAggrWeight[1];
+
+        // 对当前个体局部搜索
+        vnodePopulations[i] = _fnFindLocalOptima( vnodePopulations[i], vdAggrWeight );
+
+    }
+}
+
+
+// Local Search Phase
+void NSGAII::_fnLocalSearchPhase
+(
   vector<IndividualNode> & vnodePopulations,
   const vector<IndividualNode> & vnodeGlobalDB
   ){
@@ -226,7 +247,7 @@ void NSGAII::_fnLocalSearchPhase
     for( int i=0; i<iDBSize; ++i ){
         vector<int> viSolution( _iPopDims );
         for( int j=0; j<_iPopDims; ++j ){
-            viSolution[i] = ( vnodeGlobalDB[i]._bitTransaction.test(j) ? 1 : 0 );
+            viSolution[j] = ( vnodeGlobalDB[i]._bitTransaction.test(j) ? 1 : 0 );
         }
         vviGlobalDB[i] = viSolution;
     }
@@ -237,6 +258,12 @@ void NSGAII::_fnLocalSearchPhase
         vdAggrWeight[0] = 1 - sqrt( static_cast<double>(rand())/RAND_MAX );
         vdAggrWeight[1] = ( 1 - vdAggrWeight[0] ) * ( 1 - static_cast<double>(rand())/RAND_MAX );
         vdAggrWeight[2] = 1 - vdAggrWeight[0] - vdAggrWeight[1];
+
+        #ifdef _DEBUG1_
+        cout<<setw(10)<<vdAggrWeight[0]
+            <<setw(10)<<vdAggrWeight[1]
+            <<setw(10)<<vdAggrWeight[2]<<endl;
+        #endif
 
         //计算加权聚合函数值
         vector<double> vdAggrValue( iDBSize );
@@ -311,6 +338,38 @@ void NSGAII::_fnLocalSearchPhase
 
     }
 
+}
+
+// Find Local Optima Using Local Search
+IndividualNode NSGAII::_fnFindLocalOptima
+(
+  IndividualNode nodeInd,
+  const vector<double> & vdAggrWeight
+  ){
+    double fOptimaValue = vdAggrWeight[0] * nodeInd._vfFitness[0]
+        + vdAggrWeight[1] * nodeInd._vfFitness[1]
+        + vdAggrWeight[2] * nodeInd._vfFitness[2];
+
+    int iOptimaIdx = -1;
+
+    for( int i=0; i<_iPopDims; ++i ){
+        nodeInd._bitTransaction.flip(i);
+        _fnCalcFiteness( nodeInd );
+
+        double fNeighborOptimaValue = vdAggrWeight[0] * nodeInd._vfFitness[0]
+        + vdAggrWeight[1] * nodeInd._vfFitness[1]
+        + vdAggrWeight[2] * nodeInd._vfFitness[2];
+
+        if( fNeighborOptimaValue > fOptimaValue )
+            iOptimaIdx = i;
+        nodeInd._bitTransaction.flip(i);
+    }
+    if( iOptimaIdx != -1 )
+    {
+        nodeInd._bitTransaction.flip(iOptimaIdx);
+        _fnCalcFiteness( nodeInd );
+    }
+    return nodeInd;
 }
 
 // Find Local Optima Using Local Search
@@ -469,15 +528,15 @@ void NSGAII::_fnCalcFiteness
 
     // Normalization to Area;
     //cout<<fMaxArea<<":"<<fMinArea<<endl;
-    if(!(fMaxArea-fMinArea >= -EPSINON && fMaxArea-fMinArea <= EPSINON))
-    {
-        for( int i=0; i<_iPopSize; i++ )
-        {
-            double fArea = vnodePopulations[i]._vfFitness[2];
-            fArea = (fArea - fMinArea) / (fMaxArea - fMinArea);
-            vnodePopulations[i]._vfFitness[2] = fArea;
-        }
-    }
+    /* if(!(fMaxArea-fMinArea >= -EPSINON && fMaxArea-fMinArea <= EPSINON)) */
+    /* { */
+    /*     for( int i=0; i<_iPopSize; i++ ) */
+    /*     { */
+    /*         double fArea = vnodePopulations[i]._vfFitness[2]; */
+    /*         fArea = (fArea - fMinArea) / (fMaxArea - fMinArea); */
+    /*         vnodePopulations[i]._vfFitness[2] = fArea; */
+    /*     } */
+    /* } */
     //cout<<"NSGAII::_fnCalcFiteness Finish!"<<endl;
 }
 
@@ -917,6 +976,53 @@ void NSGAII::_fnDebugPrintInfo
     }
 }
 
+//MOEC 利用真实适应度
+vector<IndividualNode>  NSGAII::_fnMOEC0
+(
+ int & traversNode,
+ double & spendTime
+ )
+{
+    clock_t start, end, cmpTime, cstart, cend;
+    start = clock();
+
+    // 初始化生成GlobalDB
+    vector<IndividualNode> vnodePopulations = _fnInitialization();
+    _fnCalcFiteness( vnodePopulations );
+
+    /* vector<IndividualNode> lastPop; */
+    int cnt = 0;
+    int iGene;
+    cmpTime = 0;
+    for( iGene=0; iGene<5; iGene++ )
+    {
+
+        _fnLocalSearchPhase( vnodePopulations );
+
+        #ifdef _DEBUG1_
+        cout<<iGene<<"th iterators finished ..."<<endl;
+        #endif
+    }
+
+    end = clock();
+    spendTime = (double)(end-start) / CLOCKS_PER_SEC;
+
+    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+
+    traversNode = _iPopSize * iGene;
+    vector<IndividualNode> vnodeOutput;
+    vnodeOutput.reserve(_iPopSize);
+    for(const auto &i:vnodePopulations)
+    {
+        if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N )
+        {
+            vnodeOutput.push_back(i);
+        }
+    }
+    return vnodeOutput;
+}
+
+// MOEC 利用代理模型
 vector<IndividualNode>  NSGAII::_fnMOEC
 (
  int & traversNode,
@@ -939,7 +1045,7 @@ vector<IndividualNode>  NSGAII::_fnMOEC
     int cnt = 0;
     int iGene;
     cmpTime = 0;
-    for( iGene=0; iGene<50; iGene++ )
+    for( iGene=0; iGene<5; iGene++ )
     {
 
         vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodeGlobalDB );
@@ -968,7 +1074,7 @@ vector<IndividualNode>  NSGAII::_fnMOEC
 
         /* lastPop.clear(); */
         /* lastPop = vnodePopulations; */
-        #ifdef _DEBUG_
+        #ifdef _DEBUG1_
         cout<<iGene<<"th iterators finished ..."<<endl;
         #endif
     }
@@ -976,19 +1082,19 @@ vector<IndividualNode>  NSGAII::_fnMOEC
     end = clock();
     spendTime = (double)(end-start) / CLOCKS_PER_SEC;
 
-    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+    /* vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations ); */
 
-    traversNode = _iPopSize * iGene;
-    vector<IndividualNode> vnodeOutput;
-    vnodeOutput.reserve(_iPopSize);
-    for(const auto &i:vnodePopulations)
-    {
-        if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N )
-        {
-            vnodeOutput.push_back(i);
-        }
-    }
-    return vnodeOutput;
+    /* traversNode = _iPopSize * iGene; */
+    /* vector<IndividualNode> vnodeOutput; */
+    /* vnodeOutput.reserve(_iPopSize); */
+    /* for(const auto &i:vnodePopulations) */
+    /* { */
+    /*     if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N ) */
+    /*     { */
+    /*         vnodeOutput.push_back(i); */
+    /*     } */
+    /* } */
+    return vnodePopulations;
 }
 
 void NSGAII::_fnSMEC

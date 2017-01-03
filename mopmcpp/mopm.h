@@ -105,6 +105,10 @@ class NSGAII
             const std::vector<IndividualNode> &vnodeAllPop,
             const std::vector<std::vector<int> > & vviFrontList
             );
+    std::vector<IndividualNode> _fnMOEC0(
+            int &,
+            double &
+            );
     std::vector<IndividualNode> _fnMOEC(
             int &,
             double &
@@ -122,8 +126,16 @@ class NSGAII
             std::vector<IndividualNode> & vnodePopulations
             );
     void _fnLocalSearchPhase(
+            std::vector<IndividualNode> &
+            /* const std::vector<IndividualNode> & */
+            );
+    void _fnLocalSearchPhase(
             std::vector<IndividualNode> &,
             const std::vector<IndividualNode> &
+            );
+    IndividualNode _fnFindLocalOptima(
+            IndividualNode,
+            const std::vector<double> &
             );
     std::vector<int> _fnFindLocalOptima(
             std::vector<int> ,

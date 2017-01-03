@@ -16,7 +16,7 @@
 #include "matrix.h"
 
 typedef enum KERNAL {
-    k_Cubic,
+    k_Cubic = 0,
     k_ThinPlateSpline,
     k_Gaussian,
     k_MultiQuadratic,
@@ -30,14 +30,14 @@ class RadialBasisFunction{
         int _iInDim        = 10;    //输入样本维数
         static const int _INT_Kernal_Num = 5;
 
-        double _dRMSE      = -1.0;  // 均方差
-        RBF_KERNAL_TYPE _rbfKernalFunc = k_Gaussian; // 核函数类型.
+        /* double _dRMSE      = -1.0;  // 均方差 */
+        /* RBF_KERNAL_TYPE _rbfKernalFunc = k_Gaussian; // 核函数类型. */
 
         std::vector<double> _vdRMSE;  // 不同核函数的均方差
         Matrix<double> _mdGreen;         //Green矩阵
         std::vector<std::vector<int>> _vviInSample;  //输入样本
         std::vector<std::vector<int>> _vviCenter;  //M个Green函数的数据中心
-        std::vector<double> _vdOutReal;  //输入样本对应真实值
+        //std::vector<double> _vdOutReal;  //输入样本对应真实值
         Matrix<double> _mdOutReal;
         std::vector<double> _vdDelta;   //M个Green函数的扩展常数
         std::vector<double> _vdWeight;  //权值矩阵

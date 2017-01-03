@@ -58,7 +58,8 @@ RadialBasisFunction::RadialBasisFunction
     _vdDelta( iHide ),
     _mdOutReal( _iNumSample,1 ),
     _mdGreen( _iNumSample,_iHidNode ),
-    _mdWeight( _iHidNode,1 )
+    _mdWeight( _iHidNode,1 ),
+    _vdRMSE( _INT_Kernal_Num, -1 )
 {
     for( int i=0; i<_iNumSample; ++i ){
         _mdOutReal.put( i, 0, vdReal[i] );
@@ -192,7 +193,7 @@ void RadialBasisFunction::_fnCalcRMSE
 ){
     _vdRMSE[rbfKernalFunc] = 0.0;
     for( int i=0; i<_iNumSample; ++i ){
-        double dErr = fabs( getEstimation(_vviInSample[i], rbfKernalFunc) - _vdOutReal[i] );
+        double dErr = fabs( getEstimation(_vviInSample[i], rbfKernalFunc) - _mdOutReal.get( i, 0 ) );
         _vdRMSE[rbfKernalFunc] += dErr*dErr;
     }
     _vdRMSE[rbfKernalFunc] = sqrt( _vdRMSE[rbfKernalFunc] );
