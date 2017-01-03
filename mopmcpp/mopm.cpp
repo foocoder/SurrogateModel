@@ -205,11 +205,11 @@ void NSGAII::_fnCalcEstimation
             viSolution[j] = ( vnodePopulations[i]._bitTransaction.test(j) ? 1 : 0 );
         }
         vnodePopulations[i]._vfFitness[0]
-            = vmRBFModels[0].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Guassian") );
+            = vmRBFModels[0].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Gaussian") );
         vnodePopulations[i]._vfFitness[1]
-            = vmRBFModels[1].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Guassian") );
+            = vmRBFModels[1].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Gaussian") );
         vnodePopulations[i]._vfFitness[2]
-            = vmRBFModels[2].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Guassian") );
+            = vmRBFModels[2].getEstimation( viSolution, RadialBasisFunction::GetKernalType("Gaussian") );
     }
 }
 
@@ -1022,8 +1022,8 @@ vector<IndividualNode>  NSGAII::_fnMOEC0
     return vnodeOutput;
 }
 
-// MOEC 利用代理模型
-vector<IndividualNode>  NSGAII::_fnMOEC
+// MOEC 利用代理模型 GLS
+vector<IndividualNode>  NSGAII::_fnMOEC1
 (
  int & traversNode,
  double & spendTime
@@ -1094,6 +1094,74 @@ vector<IndividualNode>  NSGAII::_fnMOEC
     /*         vnodeOutput.push_back(i); */
     /*     } */
     /* } */
+    return vnodePopulations;
+}
+
+// MOEC 利用代理模型 NSGAII
+vector<IndividualNode>  NSGAII::_fnMOEC
+(
+ int & traversNode,
+ double & spendTime
+ )
+{
+    //for debug
+    //ofstream logfile("./logs");
+
+    clock_t start, end, cmpTime, cstart, cend;
+    start = clock();
+
+    vector<IndividualNode> vnodePopulations = _fnInitialization();
+    _fnCalcFiteness( vnodePopulations );
+    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+    _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
+
+    vector<RadialBasisFunction> vmRBFModels = _fnBuildModel( vnodePopulations );
+
+    /* vector<IndividualNode> lastPop; */
+    int cnt = 0;
+    int iGene;
+    cmpTime = 0;
+    for( iGene=0; iGene<10; iGene++ )
+    {
+
+        _fnSMEC( vmRBFModels, vnodePopulations );
+        _fnCalcFiteness( vnodePopulations );
+        vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+        _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
+        vmRBFModels = _fnBuildModel( vnodePopulations );
+
+        /* cstart = clock(); */
+        /* if(_fnCheckSimilar( vnodePopulations, lastPop)){ */
+        /*     cnt++; */
+        /* } */
+        /* if( cnt > 5 ) */
+        /*     break; */
+        /* cend = clock(); */
+        /* cmpTime += cend - cstart; */
+
+        /* lastPop.clear(); */
+        /* lastPop = vnodePopulations; */
+        #ifdef _DEBUG1_
+        cout<<iGene<<"th iterators finished ..."<<endl;
+        #endif
+    }
+
+    end = clock();
+    spendTime = (double)(end-start) / CLOCKS_PER_SEC;
+
+    _fnCalcFiteness( vnodePopulations );
+    vviFrontList = _fnNonDominateSort( vnodePopulations );
+
+    traversNode = _iPopSize * iGene;
+    vector<IndividualNode> vnodeOutput;
+    vnodeOutput.reserve(_iPopSize);
+    for(const auto &i:vnodePopulations)
+    {
+        if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N )
+        {
+            vnodeOutput.push_back(i);
+        }
+    }
     return vnodePopulations;
 }
 
