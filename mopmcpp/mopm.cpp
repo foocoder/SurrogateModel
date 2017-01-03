@@ -275,27 +275,39 @@ void NSGAII::_fnLocalSearchPhase
                 nodeOptima._bitTransaction.set(j);
         }
 
-        // 计算Opt适应度
+        // 计算Opt 以及 Origin 适应度
         _fnCalcFiteness( nodeOptima );
+        _fnCalcFiteness( vnodePopulations[i] );
+
+        // Strategy 1: MOGLS
+        double fOriginAggr = vdAggrWeight[0] * vnodePopulations[i]._vfFitness[0]
+            + vdAggrWeight[1] * vnodePopulations[i]._vfFitness[1]
+            + vdAggrWeight[2] * vnodePopulations[i]._vfFitness[2];
+        double fOptAggr = vdAggrWeight[0] * nodeOptima._vfFitness[0]
+            + vdAggrWeight[1] * nodeOptima._vfFitness[1]
+            + vdAggrWeight[2] * nodeOptima._vfFitness[2];
+
+        if( fOriginAggr < fOptAggr )
+            vnodePopulations[i] = nodeOptima;
 
         // 计算Opt 与Origin 支配关系
-        bool bMask0 = true, bMask1 = true;
-        for( int j=0; j<_iObjDims; ++j ){
-            bMask0 &= (nodeOptima._vfFitness[j] >= vnodePopulations[i]._vfFitness[j]);
-            bMask1 &= (nodeOptima._vfFitness[j] <= vnodePopulations[i]._vfFitness[j]);
-        }
+        /* bool bMask0 = true, bMask1 = true; */
+        /* for( int j=0; j<_iObjDims; ++j ){ */
+        /*     bMask0 &= (nodeOptima._vfFitness[j] >= vnodePopulations[i]._vfFitness[j]); */
+        /*     bMask1 &= (nodeOptima._vfFitness[j] <= vnodePopulations[i]._vfFitness[j]); */
+        /* } */
 
-        if( bMask0 && !bMask1 ){ // Opt 支配 Origin
-            vnodePopulations[i] = nodeOptima;
-        }
-        else if( !bMask0 && bMask1 ){ // Origin 支配 Opt
+        /* if( bMask0 && !bMask1 ){ // Opt 支配 Origin */
+        /*     vnodePopulations[i] = nodeOptima; */
+        /* } */
+        /* else if( !bMask0 && bMask1 ){ // Origin 支配 Opt */
 
-        }
-        else if( bMask0 && bMask1 ){ // Origin 与 Opt 相等
+        /* } */
+        /* else if( bMask0 && bMask1 ){ // Origin 与 Opt 相等 */
 
-        }
-        else{ // Opt 与 Origin 非支配
-        }
+        /* } */
+        /* else{ // Opt 与 Origin 非支配 */
+        /* } */
 
     }
 
@@ -342,6 +354,7 @@ void NSGAII::_fnCalcFiteness
 
     myBitSet<N> bitItemTemp;
     bitItemTemp.set();
+    nodeInd._vfFitness.clear();
 
     for( int i=0; i<_iPopDims; ++i ){
         if( nodeInd._bitTransaction.test(i) ){
@@ -916,42 +929,45 @@ vector<IndividualNode>  NSGAII::_fnMOEC
     clock_t start, end, cmpTime, cstart, cend;
     start = clock();
 
-    vector<IndividualNode> vnodePopulations = _fnInitialization();
-    _fnCalcFiteness( vnodePopulations );
-    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
-    _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
-    vector<RadialBasisFunction> vmRBFModels = _fnBuildModel( vnodePopulations );
+    // 初始化生成GlobalDB
+    vector<IndividualNode> vnodeGlobalDB = _fnInitialization();
+    _fnCalcFiteness( vnodeGlobalDB );
 
-    vector<IndividualNode> lastPop;
+    vector<IndividualNode> vnodePopulations( _iPopSize );
+
+    /* vector<IndividualNode> lastPop; */
     int cnt = 0;
     int iGene;
     cmpTime = 0;
-    for( iGene=0; iGene<10; iGene++ )
+    for( iGene=0; iGene<50; iGene++ )
     {
-        //for debug
-        #ifdef _DEBUG_
-        //logfile<<endl;
-        //logfile<<"Info "<<iGene<<" th Populations"<<endl;
-        //_fnDebugPrintInfo(logfile, vnodePopulations);
-        #endif
 
-        _fnSMEC( vmRBFModels, vnodePopulations );
-        _fnCalcFiteness( vnodePopulations );
-        vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
-        _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
-        vmRBFModels = _fnBuildModel( vnodePopulations );
+        vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodeGlobalDB );
+        _fnCalcCrowdDistance( vnodeGlobalDB, vviFrontList );
 
-        //cstart = clock();
-        //if(_fnCheckSimilar( vnodePopulations, lastPop)){
-            //cnt++;
-        //}
-        //if( cnt > 5 )
-            //break;
-        //cend = clock();
-        //cmpTime += cend - cstart;
+        vnodePopulations = _fnSelectMatingPool( vnodeGlobalDB );
+        _fnReproduceOff( vnodePopulations );
 
-        lastPop.clear();
-        lastPop = vnodePopulations;
+        _fnLocalSearchPhase( vnodePopulations, vnodeGlobalDB );
+        vnodeGlobalDB = vnodePopulations;
+
+        /* _fnSMEC( vmRBFModels, vnodePopulations ); */
+        /* _fnCalcFiteness( vnodePopulations ); */
+        /* vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations ); */
+        /* _fnCalcCrowdDistance( vnodePopulations, vviFrontList ); */
+        /* vmRBFModels = _fnBuildModel( vnodePopulations ); */
+
+        /* cstart = clock(); */
+        /* if(_fnCheckSimilar( vnodePopulations, lastPop)){ */
+        /*     cnt++; */
+        /* } */
+        /* if( cnt > 5 ) */
+        /*     break; */
+        /* cend = clock(); */
+        /* cmpTime += cend - cstart; */
+
+        /* lastPop.clear(); */
+        /* lastPop = vnodePopulations; */
         #ifdef _DEBUG_
         cout<<iGene<<"th iterators finished ..."<<endl;
         #endif
@@ -960,7 +976,8 @@ vector<IndividualNode>  NSGAII::_fnMOEC
     end = clock();
     spendTime = (double)(end-start) / CLOCKS_PER_SEC;
 
-    _fnCalcFiteness( vnodePopulations );
+    vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
+
     traversNode = _iPopSize * iGene;
     vector<IndividualNode> vnodeOutput;
     vnodeOutput.reserve(_iPopSize);

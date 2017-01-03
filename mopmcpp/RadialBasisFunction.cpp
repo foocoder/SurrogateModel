@@ -21,7 +21,7 @@
 
 using namespace std;
 
-inline RBF_KERNAL_TYPE RadialBasisFunction::GetKernalType
+RBF_KERNAL_TYPE RadialBasisFunction::GetKernalType
 (
  const string & strKernalFunc
  ){
@@ -198,7 +198,7 @@ void RadialBasisFunction::_fnCalcRMSE
     _vdRMSE[rbfKernalFunc] = sqrt( _vdRMSE[rbfKernalFunc] );
 }
 
-inline double RadialBasisFunction::getRMSE
+double RadialBasisFunction::getRMSE
 (
   RBF_KERNAL_TYPE rbfKernalFunc
 ){
