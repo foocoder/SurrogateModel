@@ -109,6 +109,10 @@ class NSGAII
             int &,
             double &
             );
+    std::vector<IndividualNode> _fnMOEC1(
+            int &,
+            double &
+            );
     std::vector<IndividualNode> _fnMOEC(
             int &,
             double &
