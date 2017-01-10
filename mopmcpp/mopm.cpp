@@ -183,9 +183,9 @@ vector<RadialBasisFunction> NSGAII::_fnBuildModel
         vfRealAre[i] = vnodeDatabase[i]._vfFitness[2];
     }
 
-    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup );
-    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc );
-    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre );
+    RadialBasisFunction rbfSup( iDBSize, 2*_iPopDims+1, _iPopDims, vviSample, vfRealSup );
+    RadialBasisFunction rbfOcc( iDBSize, 2*_iPopDims+1, _iPopDims, vviSample, vfRealOcc );
+    RadialBasisFunction rbfAre( iDBSize, 2*_iPopDims+1, _iPopDims, vviSample, vfRealAre );
 
     rbfSup.runRBF();
     rbfOcc.runRBF();
