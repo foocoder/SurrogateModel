@@ -61,7 +61,7 @@ void fnRunNSGAII
     int iPopSize = ( iColumnNum / 50 + 1 ) * 50;
     //iPopSize = iPopSize > 1000 ? 1000 : iPopSize;
     //iPopSize = 20;
-    cout<<"Starting NSGAII..."<<endl;
+    /* cout<<"Starting NSGAII..."<<endl; */
     NSGAII algorithm = NSGAII( iPopSize, iColumnNum, iRowNum, iColumnNum, 3, vbitDatabase );
     int traversNode;
     double spendTime;
@@ -89,6 +89,7 @@ void fnRunNSGAII
         ofsResFitFile<<endl;
     }
     ofsResFitFile<<"Time:"<<setw( 10 )<<spendTime<<setw( 10 )<<"\tNode:"<<setw( 10 )<<traversNode<<endl;
+    cout<<"Time:"<<setw( 10 )<<spendTime<<setw( 10 )<<"\tNode:"<<setw( 10 )<<traversNode<<endl;
 }
 
 int main( int argc, char *argv[] )

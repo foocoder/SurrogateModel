@@ -91,16 +91,16 @@ class myBitSet{
 
     size_t wordIndex(size_t bitIndex) const
     { return bitIndex >> _ADDRESS_BITS_PER_WORD; };
-    public:
 
-    myBitSet()
+    public:
+    myBitSet() //构造函数
     {
         for(size_t i=0; i<_M_PhysicLength; i++){
             _M_w[i] = 0;
         }
     };
 
-    myBitSet(const myBitSet &rhs)
+    myBitSet(const myBitSet &rhs) //拷贝构造函数
     {
         if(this != &rhs)
         {

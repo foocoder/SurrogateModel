@@ -8,7 +8,6 @@
 //CreatedAt:    2016-12-03 14:41:39
 // ---- Program Info End  ----
 
-#include <cassert>
 #include <limits>
 #include <cassert>
 #include <cmath>
@@ -47,7 +46,7 @@ RadialBasisFunction::RadialBasisFunction
  int iNum,
  int iHide,
  int iDim,
- const std::vector<std::vector<int>> &vviSample,
+ const std::vector< myBitSet<M> > &vviSample,
  const std::vector<double> &vdReal
  ):
     _iNumSample( iNum ),
@@ -86,58 +85,16 @@ inline double RadialBasisFunction::_fnRandomNorm( double mu, double sigma, doubl
 /*根据网络，由输入得到输出*/
 double RadialBasisFunction::getEstimation
 (
- const vector<int> & inNode,
+ const myBitSet<M> & inNode,
  RBF_KERNAL_TYPE rbfKernalFunc
  ){
-    double dResult = 0.0;
-    switch( rbfKernalFunc ){
-        case k_Cubic:
-            //cout<<"k_Cubic"<<endl;
-            for( int i=0; i<_iHidNode; ++i ){
-                int iDist = GetDistance( inNode, _vviCenter[i] );
-                dResult += _mdWeight.get(i,0)*(iDist*iDist*iDist);
-            }
-            break;
-        case k_ThinPlateSpline:
-            //cout<<"k_ThinPlateSpline"<<endl;
-            for( int i=0; i<_iHidNode; ++i ){
-                int iDist = GetDistance( inNode, _vviCenter[i] );
-                dResult += _mdWeight.get(i,0)*(iDist*iDist*log(iDist));
-            }
-            break;
-        case k_Gaussian:
-            //cout<<"k_Gaussian"<<endl;
-            for( int i=0; i<_iHidNode; ++i ){
-                int iDist = GetDistance( inNode, _vviCenter[i] );
-                dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
-            }
-            break;
-        case k_MultiQuadratic:
-            //cout<<"k_MultiQuadratic"<<endl;
-            for( int i=0; i<_iHidNode; ++i ){
-                int iDist = GetDistance( inNode, _vviCenter[i] );
-                dResult += _mdWeight.get(i,0)*sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]);
-            }
-            break;
-        case k_InverseMultiQuadratic:
-            //cout<<"k_InverseMultiQuadratic"<<endl;
-            for( int i=0; i<_iHidNode; ++i ){
-                int iDist = GetDistance( inNode, _vviCenter[i] );
-                dResult += _mdWeight.get(i,0)*( 1.0 / sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]) );
-            }
-            break;
-        default:
-            cout<<"Err"<<endl;
-            exit(-1);
-            break;
-    }
-    return dResult;
+    return getEstimation( inNode, rbfKernalFunc );
 }
 
 /*根据网络，由输入得到输出*/
 double RadialBasisFunction::getEstimation
 (
- const vector<int> & inNode,
+ const myBitSet<M> & inNode,
  RBF_KERNAL_TYPE rbfKernalFunc
  ) const
 {
@@ -210,27 +167,23 @@ double RadialBasisFunction::getRMSE
 }
 
 /*计算样本距离*/
-int RadialBasisFunction::GetDistance( const vector<int> &lhs, const vector<int> &rhs ){
-    assert( lhs.size() == rhs.size() );
-    int iDim = lhs.size();
-    int iDist = 0.0;
-    for( int i=0; i<iDim; ++i ){
-        iDist += abs(lhs[i] - rhs[i]);
-    }
-    return iDist;
+int RadialBasisFunction::GetDistance
+(
+ const myBitSet<M> &lhs, const myBitSet<M> &rhs
+ ){
+    /* assert( lhs.size() == rhs.size() ); */
+    /* int iDim = lhs.size(); */
+    /* int iDist = 0.0; */
+    /* for( int i=0; i<iDim; ++i ){ */
+    /*     iDist += abs(lhs[i] - rhs[i]); */
+    /* } */
+    myBitSet<M> bitLHS( lhs );
+    bitLHS ^= rhs;
+    return bitLHS.SSE4_count();
 }
 
-/*计算样本距离*/
-/* int RadialBasisFunction::GetDistance( const vector<int> &lhs, const vector<int> &rhs )const{ */
-/*     int iDist = 0.0; */
-/*     for( int i=0; i<_iInDim; ++i ){ */
-/*         iDist += abs(lhs[i] - rhs[i]); */
-/*     } */
-/*     return iDist; */
-/* } */
-
 /*寻找样本离哪个中心最近*/
-int RadialBasisFunction::_fnGetNearestCenter(const vector<int> &inNode){
+int RadialBasisFunction::_fnGetNearestCenter(const myBitSet<M> &inNode){
     int iIdx=-1;
     int iMinDist=numeric_limits<int>::max();
     for(int i=0;i<_vviCenter.size();++i){
@@ -244,18 +197,16 @@ int RadialBasisFunction::_fnGetNearestCenter(const vector<int> &inNode){
 }
 
 /*计算簇的质心*/
-vector<int> RadialBasisFunction::_fnRecalcCenter(const vector<vector<int>> &vviGroup){
+myBitSet<M> RadialBasisFunction::_fnRecalcCenter(const vector< myBitSet<M> > &vviGroup){
     int iGroupSize=vviGroup.size();
-    vector<int> viCenter(_iInDim);
+    myBitSet<M> viCenter;
     for( int j=0; j<_iInDim; ++j ){
         int iCnt = 0;
         for(int i=0; i<iGroupSize; ++i) {
-            iCnt += vviGroup[i][j];
+            iCnt += vviGroup[i].test(j);
         }
         if( iCnt > iGroupSize-iCnt )
-            viCenter[j] = 1;
-        else
-            viCenter[j] = 0;
+            viCenter.set(j);
     }
     return viCenter;
 }
@@ -263,7 +214,7 @@ vector<int> RadialBasisFunction::_fnRecalcCenter(const vector<vector<int>> &vviG
 /*KMeans聚类法产生数据中心*/
 void RadialBasisFunction::_fnKPrototype(){
     assert(_iNumSample % _iHidNode == 0);
-    vector<vector<vector<int>>> vvviPackage(_iHidNode);          //记录各个聚类中包含哪些样本
+    vector<vector<myBitSet<M>>> vvviPackage(_iHidNode);          //记录各个聚类中包含哪些样本
     int iCnt = 0;
     int iSep  = _iNumSample / _iHidNode;
     int iStep = rand() % iSep;
@@ -277,9 +228,9 @@ void RadialBasisFunction::_fnKPrototype(){
             int c=_fnGetNearestCenter(_vviInSample[i]);
             vvviPackage[c].push_back(_vviInSample[i]);
         }
-        vector<vector<int> > vviNextCenter(_iHidNode);       //存储新的簇心
+        vector<myBitSet<M> > vviNextCenter(_iHidNode);       //存储新的簇心
         for(int i=0;i<_iHidNode;++i){
-            vector<vector<int> > vviGroup=vvviPackage[i];
+            vector<myBitSet<M> > vviGroup = vvviPackage[i];
             vviNextCenter[i]=_fnRecalcCenter(vviGroup);
         }
         bool bFlag=false;

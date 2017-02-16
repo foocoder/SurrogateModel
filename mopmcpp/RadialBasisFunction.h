@@ -14,6 +14,15 @@
 #include <vector>
 #include <cstring>
 #include "matrix.h"
+#include "myBitSet.h"
+
+#ifndef N
+#define N 573652
+#endif // define N
+
+#ifndef M
+#define M 273
+#endif //define M
 
 typedef enum KERNAL {
     k_Cubic = 0,
@@ -35,8 +44,8 @@ class RadialBasisFunction{
 
         std::vector<double> _vdRMSE;  // 不同核函数的均方差
         Matrix<double> _mdGreen;         //Green矩阵
-        std::vector<std::vector<int>> _vviInSample;  //输入样本
-        std::vector<std::vector<int>> _vviCenter;  //M个Green函数的数据中心
+        std::vector< myBitSet<M> > _vviInSample;  //输入样本
+        std::vector< myBitSet<M> > _vviCenter;  //M个Green函数的数据中心
         //std::vector<double> _vdOutReal;  //输入样本对应真实值
         Matrix<double> _mdOutReal;
         std::vector<double> _vdDelta;   //M个Green函数的扩展常数
@@ -61,11 +70,11 @@ class RadialBasisFunction{
                 );
         /*寻找样本离哪个中心最近*/
         int _fnGetNearestCenter(
-            const std::vector<int> &inNode
+            const myBitSet<M> &inNode
                 );
         /*计算簇的质心*/
-        std::vector<int> _fnRecalcCenter(
-            const std::vector<std::vector<int>> &group
+        myBitSet<M> _fnRecalcCenter(
+            const std::vector<myBitSet<M>> &group
                 );
         /*KMeans聚类法产生数据中心*/
         void _fnKPrototype(
@@ -91,7 +100,7 @@ class RadialBasisFunction{
             int iNum,
             int iHide,
             int iDim,
-            const std::vector<std::vector<int>> &vviSample,
+            const std::vector< myBitSet<M> > &vviSample,
             const std::vector<double> &vdReal
                 );
         ~RadialBasisFunction(
@@ -104,12 +113,12 @@ class RadialBasisFunction{
                 );
         /*根据网络，由输入得到输出*/
         double getEstimation(
-            const std::vector<int> &inNode,
+            const myBitSet<M> &inNode,
             RBF_KERNAL_TYPE
                 );
         /*根据网络，由输入得到输出*/
         double getEstimation(
-            const std::vector<int> &inNode,
+            const myBitSet<M> &inNode,
             RBF_KERNAL_TYPE
                 ) const;
         /*获得样本数量*/
@@ -133,14 +142,9 @@ class RadialBasisFunction{
                 );
         /*计算样本点距离*/
         static int GetDistance(
-            const std::vector<int> &lhs,
-            const std::vector<int> &rhs
+            const myBitSet<M> &lhs,
+            const myBitSet<M> &rhs
                 );
-        /*计算样本点距离*/
-        /* static int GetDistance( */
-        /*     const std::vector<int> &lhs, */
-        /*     const std::vector<int> &rhs */
-        /*         ) const; */
 };
 
 #endif // _RBF_H_
