@@ -75,6 +75,11 @@ class NSGAII
             const std::vector<IndividualNode> &vnodeDatabase
             );
     void _fnCalcEstimation(
+            const std::vector<std::vector<RadialBasisFunction>> & ,
+            std::vector<IndividualNode> &,
+            int
+            );
+    void _fnCalcEstimation(
             const std::vector<RadialBasisFunction> & vmRBFModels,
             std::vector<IndividualNode> & vnodePopulations
             );
@@ -105,17 +110,14 @@ class NSGAII
             const std::vector<IndividualNode> &vnodeAllPop,
             const std::vector<std::vector<int> > & vviFrontList
             );
-    std::vector<IndividualNode> _fnMOEC0(
-            int &,
-            double &
-            );
-    std::vector<IndividualNode> _fnMOEC1(
-            int &,
-            double &
-            );
     std::vector<IndividualNode> _fnMOEC(
             int &,
             double &
+            );
+    void _fnSMEC(
+            const std::vector<std::vector<RadialBasisFunction>> & ,
+            std::vector<IndividualNode> & ,
+            int
             );
     void _fnSMEC(
             const std::vector<RadialBasisFunction> & vmRBFModels,
@@ -124,6 +126,10 @@ class NSGAII
     bool _fnCheckSimilar(
             std::vector<IndividualNode> lhs,
             std::vector<IndividualNode> rhs
+            );
+    double _fnVerifyAccuracy(
+            const std::vector<RadialBasisFunction> & vmRBFModels,
+            const std::vector<IndividualNode> & vnodeDatabase
             );
     void _fnDebugPrintInfo(
             std::ofstream & logs,

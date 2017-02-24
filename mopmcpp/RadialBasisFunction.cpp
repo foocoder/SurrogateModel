@@ -87,8 +87,52 @@ double RadialBasisFunction::getEstimation
 (
  const myBitSet<M> & inNode,
  RBF_KERNAL_TYPE rbfKernalFunc
- ){
-    return getEstimation( inNode, rbfKernalFunc );
+ )const
+{
+    /* return getEstimation( inNode, rbfKernalFunc ); */
+    double dResult = 0.0;
+    switch( rbfKernalFunc ){
+        case k_Cubic:
+            //cout<<"k_Cubic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = GetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*(iDist*iDist*iDist);
+            }
+            break;
+        case k_ThinPlateSpline:
+            //cout<<"k_ThinPlateSpline"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = GetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*(iDist*iDist*log(iDist));
+            }
+            break;
+        case k_Gaussian:
+            //cout<<"k_Gaussian"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = GetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*exp(-1.0*iDist*iDist/(2*_vdDelta[i]*_vdDelta[i]));
+            }
+            break;
+        case k_MultiQuadratic:
+            //cout<<"k_MultiQuadratic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = GetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]);
+            }
+            break;
+        case k_InverseMultiQuadratic:
+            //cout<<"k_InverseMultiQuadratic"<<endl;
+            for( int i=0; i<_iHidNode; ++i ){
+                int iDist = GetDistance( inNode, _vviCenter[i] );
+                dResult += _mdWeight.get(i,0)*( 1.0 / sqrt(1.0*iDist*iDist+_vdDelta[i]*_vdDelta[i]) );
+            }
+            break;
+        default:
+            cout<<"Err"<<endl;
+            exit(-1);
+            break;
+    }
+    return dResult;
 }
 
 /*根据网络，由输入得到输出*/
@@ -96,7 +140,7 @@ double RadialBasisFunction::getEstimation
 (
  const myBitSet<M> & inNode,
  RBF_KERNAL_TYPE rbfKernalFunc
- ) const
+ )
 {
     double dResult = 0.0;
     switch( rbfKernalFunc ){
@@ -143,6 +187,36 @@ double RadialBasisFunction::getEstimation
     return dResult;
 }
 
+double RadialBasisFunction::getEnsembleEstimation
+(
+  const vector<double> & vdWeights,
+  const vector<RBF_KERNAL_TYPE> & vtKernalFuncs,
+  const myBitSet<M> & inNode
+)const
+{
+    assert( vdWeights.size() == vtKernalFuncs.size() );
+    double fResult = 0.0;
+    int iFuncNum = vdWeights.size();
+    for( int i=0; i<iFuncNum; ++i){
+        fResult += vdWeights[i] * getEstimation( inNode, vtKernalFuncs[i] );
+    }
+    return fResult;
+}
+double RadialBasisFunction::getEnsembleEstimation
+(
+  const vector<double> & vdWeights,
+  const vector<RBF_KERNAL_TYPE> & vtKernalFuncs,
+  const myBitSet<M> & inNode
+)
+{
+    assert( vdWeights.size() == vtKernalFuncs.size() );
+    double fResult = 0.0;
+    int iFuncNum = vdWeights.size();
+    for( int i=0; i<iFuncNum; ++i){
+        fResult += vdWeights[i] * getEstimation( inNode, vtKernalFuncs[i] );
+    }
+    return fResult;
+}
 // 计算模型均方差
 void RadialBasisFunction::_fnCalcRMSE
 (
@@ -164,6 +238,23 @@ double RadialBasisFunction::getRMSE
         _fnCalcRMSE( rbfKernalFunc );
     }
     return _vdRMSE[rbfKernalFunc];
+}
+
+// 计算模型在部分解上的RMSE
+double RadialBasisFunction::calcRMSE
+(
+ RBF_KERNAL_TYPE rbfKernalFunc,
+ const vector<myBitSet<M>> & vviInSample,
+ const vector<double> & vdReal
+)const
+{
+    double fRMSE = 0.0;
+    int iNumSample = vviInSample.size();
+    for( int i=0; i<iNumSample; ++i ){
+        double dErr = fabs( getEstimation( vviInSample[i], rbfKernalFunc) - vdReal[i] );
+        fRMSE += dErr * dErr;
+    }
+    return sqrt( fRMSE );
 }
 
 /*计算样本距离*/

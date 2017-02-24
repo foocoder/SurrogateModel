@@ -121,6 +121,16 @@ class RadialBasisFunction{
             const myBitSet<M> &inNode,
             RBF_KERNAL_TYPE
                 ) const;
+        double getEnsembleEstimation (
+            const std::vector<double> & vdWeights,
+            const std::vector<RBF_KERNAL_TYPE> & vtKernalFuncs,
+            const myBitSet<M> & inNode
+                )const;
+        double getEnsembleEstimation (
+            const std::vector<double> & vdWeights,
+            const std::vector<RBF_KERNAL_TYPE> & vtKernalFuncs,
+            const myBitSet<M> & inNode
+                );
         /*获得样本数量*/
         int getNumberSample(
 
@@ -137,6 +147,11 @@ class RadialBasisFunction{
         double getRMSE(
             RBF_KERNAL_TYPE rbfKernalFunc
                 );
+        double calcRMSE(
+            RBF_KERNAL_TYPE rbfKernalFunc,
+            const std::vector<myBitSet<M>> & vviInSample,
+            const std::vector<double> & vdReal
+                )const;
         static RBF_KERNAL_TYPE GetKernalType(
             const std::string &
                 );
