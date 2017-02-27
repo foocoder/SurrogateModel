@@ -61,7 +61,7 @@ void fnRunNSGAII
     fnReadData(input, vbitDatabase, iRowNum, iColumnNum);
 
     int iPopSize = (iColumnNum / 50 + 1) * 50;
-    iPopSize = iPopSize > 100 ? 100 : iPopSize;
+    iPopSize = iPopSize > 1000 ? 1000 : iPopSize;
 
     //cout<<"Starting NSGAII..."<<endl;
     NSGAII algorithm = NSGAII(iPopSize, iColumnNum, iRowNum, iColumnNum, 3, vbitDatabase);

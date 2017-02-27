@@ -368,14 +368,26 @@ void RadialBasisFunction::_fnCalcDelta(){
 
 }
 /*运行RBF网络*/
-void RadialBasisFunction::runRBF(){
+void RadialBasisFunction::runRBF( vector<clock_t> & vtTimers){
     //K-protytype 选取中心点
+    clock_t tTimer;
+    tTimer = clock();
     _fnKPrototype();
+    vtTimers[0] += clock() - tTimer;
+
     //根据center计算delta
+    tTimer = clock();
     _fnCalcDelta();
+    vtTimers[1] += clock() - tTimer;
+
     //计算Green矩阵
-    _fnCalcGreen();     //计算Green矩阵
+    tTimer = clock();
+    _fnCalcGreen();
+    vtTimers[2] += clock() - tTimer;
+
     //计算权值weight
+    tTimer = clock();
     _mdWeight=_fnGetGereralizedInverse(_mdGreen)*_mdOutReal;      //计算权值矩阵
+    vtTimers[3] += clock() - tTimer;
 
 }

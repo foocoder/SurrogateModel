@@ -164,7 +164,8 @@ vector<IndividualNode> NSGAII::_fnInitialization()
 // 训练代理模型
 vector<RadialBasisFunction> NSGAII::_fnBuildModel
 (
- const vector<IndividualNode> & vnodeDatabase
+ const vector<IndividualNode> & vnodeDatabase,
+ vector<clock_t> & vtTimers
  ){
     int iDBSize = vnodeDatabase.size();
     vector< myBitSet<M> > vviSample;
@@ -185,13 +186,13 @@ vector<RadialBasisFunction> NSGAII::_fnBuildModel
         vfRealAre[i] = vnodeDatabase[i]._vfFitness[2];
     }
 
-    RadialBasisFunction rbfSup( iDBSize, 10, _iPopDims, vviSample, vfRealSup );
-    RadialBasisFunction rbfOcc( iDBSize, 10, _iPopDims, vviSample, vfRealOcc );
-    RadialBasisFunction rbfAre( iDBSize, 10, _iPopDims, vviSample, vfRealAre );
+    RadialBasisFunction rbfSup( iDBSize, 0.1*iDBSize, _iPopDims, vviSample, vfRealSup );
+    RadialBasisFunction rbfOcc( iDBSize, 0.1*iDBSize, _iPopDims, vviSample, vfRealOcc );
+    RadialBasisFunction rbfAre( iDBSize, 0.1*iDBSize, _iPopDims, vviSample, vfRealAre );
 
-    rbfSup.runRBF();
-    rbfOcc.runRBF();
-    rbfAre.runRBF();
+    rbfSup.runRBF(vtTimers);
+    rbfOcc.runRBF(vtTimers);
+    rbfAre.runRBF(vtTimers);
     return { rbfSup, rbfOcc, rbfAre };
 }
 
@@ -834,15 +835,20 @@ vector<IndividualNode>  NSGAII::_fnMOEC
  double & spendTime
  )
 {
-    clock_t start, end, cmpTime = 0, cstart, cend;
-    start = clock();
+    clock_t tStart, tEnd, tTimer, tModel = 0;
+    tStart = clock();
+
+    vector<clock_t> vtTimers(4,0);
 
     // 初始化迭代
     vector<IndividualNode> vnodePopulations = _fnInitialization();
     _fnCalcFiteness( vnodePopulations );
     vector<vector<int> > vviFrontList = _fnNonDominateSort( vnodePopulations );
     _fnCalcCrowdDistance( vnodePopulations, vviFrontList );
-    vector<RadialBasisFunction> vmRBFModels = _fnBuildModel( vnodePopulations );
+
+    tTimer = clock();
+    vector<RadialBasisFunction> vmRBFModels = _fnBuildModel( vnodePopulations, vtTimers );
+    tModel += clock() - tTimer;
 
     //迭代参数
     int cnt = 0, iGene, iIteration = 50;
@@ -873,7 +879,9 @@ vector<IndividualNode>  NSGAII::_fnMOEC
         vnodePopulations = _fnNatureSelectionNoDuplicate(vnodeMixedPop, vviMixFrontList);
 
         /* cout<<"\033[34;1mRMSE="<<_fnVerifyAccuracy( vmRBFModels, vnodePopulations )<<"\033[0m\t"; */
-        vmRBFModels = _fnBuildModel( vnodePopulations );
+        tTimer = clock();
+        vmRBFModels = _fnBuildModel( vnodePopulations, vtTimers );
+        tModel += clock() - tTimer;
 
         #ifdef _DEBUG1_
         cout<<"\033[34;1mRMSE="<<(vmRBFModels[0].getRMSE( RadialBasisFunction::GetKernalType("Gaussian") )
@@ -893,22 +901,29 @@ vector<IndividualNode>  NSGAII::_fnMOEC
 
     }
 
-    end = clock();
-    spendTime = (double)(end-start) / CLOCKS_PER_SEC;
-
-    _fnCalcFiteness( vnodePopulations );
-    vviFrontList = _fnNonDominateSort( vnodePopulations );
+    tEnd = clock();
+    spendTime = (double)(tEnd-tStart) / CLOCKS_PER_SEC;
 
     traversNode = _iPopSize * iGene;
-    vector<IndividualNode> vnodeOutput;
-    vnodeOutput.reserve(_iPopSize);
-    for(const auto &i:vnodePopulations)
-    {
-        if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N )
-        {
-            vnodeOutput.push_back(i);
-        }
-    }
+
+    cout << "\nBuildTime: "<<(double) tModel / CLOCKS_PER_SEC
+         << "\nK-Prototype: "<<(double) vtTimers[0] / CLOCKS_PER_SEC
+         << "\nCalculateDelta: "<<(double) vtTimers[1] / CLOCKS_PER_SEC
+         << "\nCalculateGreen: "<<(double) vtTimers[2] / CLOCKS_PER_SEC
+         << "\nCalculateWeight: "<<(double) vtTimers[3] / CLOCKS_PER_SEC<<endl;
+
+    /* _fnCalcFiteness( vnodePopulations ); */
+    /* vviFrontList = _fnNonDominateSort( vnodePopulations ); */
+
+    /* vector<IndividualNode> vnodeOutput; */
+    /* vnodeOutput.reserve(_iPopSize); */
+    /* for(const auto &i:vnodePopulations) */
+    /* { */
+    /*     if(i._iFrontNo == 0 && i._vfFitness[0] > (double) 1 /N ) */
+    /*     { */
+    /*         vnodeOutput.push_back(i); */
+    /*     } */
+    /* } */
     return vnodePopulations;
 }
 

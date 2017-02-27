@@ -72,7 +72,8 @@ class NSGAII
 
             );
     std::vector<RadialBasisFunction> _fnBuildModel(
-            const std::vector<IndividualNode> &vnodeDatabase
+            const std::vector<IndividualNode> &vnodeDatabase,
+            std::vector<clock_t> &
             );
     void _fnCalcEstimation(
             const std::vector<std::vector<RadialBasisFunction>> & ,

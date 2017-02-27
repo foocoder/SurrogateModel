@@ -109,7 +109,7 @@ class RadialBasisFunction{
 
         /*运行RBF网络*/
         void runRBF(
-
+            std::vector<clock_t> &
                 );
         /*根据网络，由输入得到输出*/
         double getEstimation(
